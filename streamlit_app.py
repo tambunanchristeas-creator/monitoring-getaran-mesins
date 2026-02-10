@@ -25,7 +25,7 @@ st.title("📊 Monitoring Getaran & RPM Mesin")
 def load_data():
     response = supabase.table("maintable") \
         .select("*") \
-        .order("created_at", desc=True) \
+        .order("Time", desc=True) \
         .limit(50) \
         .execute()
 
@@ -43,19 +43,19 @@ if df.empty:
 latest = df.iloc[0]
 
 col1, col2, col3 = st.columns(3)
-col1.metric("RPM", f"{latest['rpm']}")
-col2.metric("Getaran (mm/s)", f"{latest['vibration']}")
-col3.metric("Level", latest["status"])
+col1.metric("RPM", f"{latest['RPM']}")
+col2.metric("Getaran (mm/s)", f"{latest['Vibration']}")
+col3.metric("Level", latest["Status"])
 
 # ======================
 # GRAFIK
 # ======================
 st.subheader("Grafik RPM")
-fig_rpm = px.line(df, x="created_at", y="rpm", markers=True)
+fig_rpm = px.line(df, x="Time", y="RPM", markers=True)
 st.plotly_chart(fig_rpm, use_container_width=True)
 
 st.subheader("Grafik Getaran")
-fig_getaran = px.line(df, x="created_at", y="getaran", markers=True)
+fig_getaran = px.line(df, x="Time", y="Vibration", markers=True)
 st.plotly_chart(fig_getaran, use_container_width=True)
 
 # ======================
