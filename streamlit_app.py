@@ -39,4 +39,4 @@ df = pd.DataFrame({
 
 st.subheader("Grafik Monitoring")
 st.bar_chart(df)
-st.title("TES COMMIT BERHASIL")
+st.title("TES 2 COMMIT BERHASIL")
