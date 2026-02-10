@@ -64,7 +64,7 @@ st.caption("Selamat Datang Di Website Pemantauan")
 def load_data():
     response = supabase.table("maintable") \
         .select("*") \
-        .order("Time", desc=True) \
+        .order("time", desc=True) \
         .limit(100) \
         .execute()
 
@@ -78,9 +78,9 @@ if df.empty:
 
 latest = df.iloc[0]
 
-rpm = latest["RPM"]
-vibration = latest["Vibration"]
-status = latest["Status"]
+rpm = latest["rpm"]
+vibration = latest["vibration"]
+status = latest["status"]
 
 # ======================
 # WARNA STATUS
@@ -131,9 +131,9 @@ left, right = st.columns(2)
 with left:
     st.subheader("📈 Grafik RPM")
     fig_rpm = px.line(
-        df.sort_values("Time"),
-        x="Time",
-        y="RPM",
+        df.sort_values("time"),
+        x="time",
+        y="rpm",
         markers=True
     )
     fig_rpm.update_layout(
@@ -145,9 +145,9 @@ with left:
 with right:
     st.subheader("📉 Grafik Getaran")
     fig_vib = px.line(
-        df.sort_values("Time"),
-        x="Time",
-        y="Vibration",
+        df.sort_values("time"),
+        x="time",
+        y="vibration",
         markers=True
     )
     fig_vib.update_layout(
