@@ -71,7 +71,7 @@ st.divider()
 # DATA CONTOH (NANTI GANTI DARI SUPABASE)
 # -----------------------------
 rpm = 1450
-getaran = 7.2   # mm/s
+getaran = 9.2   # mm/s
 
 # -----------------------------
 # STATUS MESIN
