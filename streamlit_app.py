@@ -1,10 +1,9 @@
 import streamlit as st
 import pandas as pd
 import time
-import random
 
 # -----------------------------
-# SETTING HALAMAN
+# KONFIGURASI HALAMAN
 # -----------------------------
 st.set_page_config(
     page_title="Monitoring Getaran Mesin",
@@ -13,62 +12,123 @@ st.set_page_config(
 )
 
 # -----------------------------
-# AUTO REFRESH
+# CSS TAMBAHAN (BIAR CAKEP)
 # -----------------------------
-REFRESH_INTERVAL = 60  # detik
-time.sleep(REFRESH_INTERVAL)
-st.rerun()
+st.markdown("""
+<style>
+.metric-card {
+    background-color: #1e1e1e;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+.metric-title {
+    font-size: 18px;
+    color: #aaaaaa;
+}
+.metric-value {
+    font-size: 36px;
+    font-weight: bold;
+    color: white;
+}
+.status-normal {
+    background-color: #1f7a1f;
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+}
+.status-warning {
+    background-color: #b36b00;
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+}
+.status-danger {
+    background-color: #a61d24;
+    padding: 15px;
+    border-radius: 10px;
+    color: white;
+    text-align: center;
+    font-size: 20px;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------------------
 # HEADER
 # -----------------------------
-st.title("⚙️ Monitoring Mesin Berputar")
-st.caption("Real-Time Early Warning System")
+st.markdown("## ⚙️ Monitoring Mesin Berputar")
+st.caption("Early Warning System Berbasis PLC, ESP32, dan IoT")
 
 st.divider()
 
 # -----------------------------
-# SIMULASI DATA REAL-TIME
-# (NANTI DIGANTI SUPABASE)
+# DATA CONTOH (NANTI GANTI DARI SUPABASE)
 # -----------------------------
-rpm = random.randint(1200, 1600)
-getaran = round(random.uniform(2.0, 9.5), 2)
+rpm = 1450
+getaran = 7.2   # mm/s
 
 # -----------------------------
-# LOGIKA STATUS
+# STATUS MESIN
 # -----------------------------
 if getaran < 4.5:
     status = "NORMAL"
-    warna = "🟢"
+    status_class = "status-normal"
 elif getaran < 7.0:
     status = "UNSATISFACTORY"
-    warna = "🟡"
+    status_class = "status-warning"
 else:
     status = "DANGER"
-    warna = "🔴"
+    status_class = "status-danger"
 
 # -----------------------------
-# METRIC
+# METRIC UTAMA
 # -----------------------------
 col1, col2, col3 = st.columns(3)
 
-col1.metric("RPM Mesin", rpm)
-col2.metric("Getaran (mm/s)", getaran)
-col3.metric("Status", f"{warna} {status}")
+with col1:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-title">RPM Mesin</div>
+        <div class="metric-value">{rpm}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col2:
+    st.markdown(f"""
+    <div class="metric-card">
+        <div class="metric-title">Getaran (mm/s)</div>
+        <div class="metric-value">{getaran}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col3:
+    st.markdown(f"""
+    <div class="{status_class}">
+        STATUS MESIN<br><b>{status}</b>
+    </div>
+    """, unsafe_allow_html=True)
 
 st.divider()
 
 # -----------------------------
-# GRAFIK
+# GRAFIK GETARAN
 # -----------------------------
+st.subheader("📊 Grafik Monitoring")
+
 df = pd.DataFrame({
-    "Parameter": ["RPM", "Getaran"],
-    "Nilai": [rpm, getaran]
+    "RPM": [rpm],
+    "Getaran (mm/s)": [getaran]
 })
 
-st.bar_chart(df)
+st.bar_chart(df, height=300)
 
 # -----------------------------
-# INFO UPDATE
+# FOOTER
 # -----------------------------
-st.caption(f"⏱ Auto refresh setiap {REFRESH_INTERVAL} detik")
+st.caption("© 2026 | Sistem Monitoring Mesin Industri")
