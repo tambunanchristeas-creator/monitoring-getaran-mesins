@@ -44,8 +44,8 @@ latest = df.iloc[0]
 
 col1, col2, col3 = st.columns(3)
 col1.metric("RPM", f"{latest['rpm']}")
-col2.metric("Getaran (mm/s)", f"{latest['getaran']}")
-col3.metric("Level", latest["level"])
+col2.metric("Getaran (mm/s)", f"{latest['vibration']}")
+col3.metric("Level", latest["status"])
 
 # ======================
 # GRAFIK
