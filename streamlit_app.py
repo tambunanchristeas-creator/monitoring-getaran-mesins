@@ -55,7 +55,7 @@ body {
 # JUDUL
 # ======================
 st.markdown("## ⚙️ **Monitoring Getaran & RPM Mesin Industri**")
-st.caption("Real-time data dari PLC → ESP32 → Supabase")
+st.caption("Selamat Datang Di Website Pemantauan")
 
 # ======================
 # AMBIL DATA
