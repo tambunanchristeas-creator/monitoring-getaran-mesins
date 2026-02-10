@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 
+
 SUPABASE_URL = "https://qpefflvoxwtbqssimbev.supabase.co"
 SUPABASE_KEY = "sb_publishable_sqyi_4r3w3JiIR8wTyLG9g_0_oMexT7"
 TABLE = "maintable"
