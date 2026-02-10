@@ -1,5 +1,5 @@
 import streamlit as st
-from supabase import create_client, Client
+from supabase import create_client
 import pandas as pd
 import plotly.express as px
 
@@ -23,7 +23,7 @@ st.title("📊 Monitoring Getaran & RPM Mesin")
 # ======================
 @st.cache_data(ttl=5)  # auto refresh tiap 5 detik
 def load_data():
-    response = supabase.table("data_mesin") \
+    response = supabase.table("maintable") \
         .select("*") \
         .order("created_at", desc=True) \
         .limit(50) \
