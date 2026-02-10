@@ -15,7 +15,7 @@ st.set_page_config(
 # -----------------------------
 # AUTO REFRESH
 # -----------------------------
-REFRESH_INTERVAL = 3  # detik
+REFRESH_INTERVAL = 10  # detik
 time.sleep(REFRESH_INTERVAL)
 st.rerun()
 
