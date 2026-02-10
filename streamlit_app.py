@@ -10,7 +10,7 @@ st.caption("Early Warning System Berbasis PLC & ESP32")
 # DATA CONTOH
 # -----------------------------
 rpm = 1450
-getaran = 9.0  # mm/s
+getaran = 0.0  # mm/s
 
 # -----------------------------
 # STATUS MESIN
