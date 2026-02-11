@@ -21,41 +21,32 @@ SUPABASE_KEY = "sb_publishable_sqyi_4r3w3JiIR8wTyLG9g_0_oMexT7"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ======================
-# STYLE CSS (LIGHT MODE)
+# STYLE CSS
 # ======================
 st.markdown("""
 <style>
 body {
-    background-color: #f4f6f9;
+    background-color: #0e1117;
 }
-
 .metric-card {
     padding: 25px;
     border-radius: 15px;
     text-align: center;
     color: white;
-    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
 }
-
-.rpm {background: linear-gradient(135deg,#3498db,#5dade2);}
-.vibration {background: linear-gradient(135deg,#f39c12,#f8c471);}
-.normal {background: linear-gradient(135deg,#27ae60,#52be80);}
-.warning {background: linear-gradient(135deg,#f1c40f,#f7dc6f);}
-.danger {background: linear-gradient(135deg,#e74c3c,#ec7063);}
-
+.rpm {background: linear-gradient(135deg,#1f77b4,#4fa3ff);}
+.vibration {background: linear-gradient(135deg,#ff7f0e,#ffb347);}
+.normal {background: linear-gradient(135deg,#2ecc71,#27ae60);}
+.warning {background: linear-gradient(135deg,#f1c40f,#f39c12);}
+.danger {background: linear-gradient(135deg,#e74c3c,#c0392b);}
 .metric-value {
     font-size: 42px;
     font-weight: bold;
 }
-
 .metric-label {
     font-size: 18px;
-    opacity: 0.95;
-    color: rgba(255,255,255,0.95);
-}
-
-h2, h3, h4 {
-    color: #2c3e50;
+    opacity: 0.9;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -146,7 +137,7 @@ with left:
         markers=True
     )
     fig_rpm.update_layout(
-        template="plotly_white",
+        template="plotly_dark",
         height=400
     )
     st.plotly_chart(fig_rpm, use_container_width=True)
@@ -160,7 +151,7 @@ with right:
         markers=True
     )
     fig_vib.update_layout(
-        template="plotly_white",
+        template="plotly_dark",
         height=400
     )
     st.plotly_chart(fig_vib, use_container_width=True)
