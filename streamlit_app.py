@@ -131,8 +131,13 @@ st.divider()
 # JUDUL GRAFIK BIRU
 # ======================
 st.markdown("""
-<div style='background:#0b3d91;padding:10px;border-radius:8px'>
+<div style='
+        background:#0b3d91;
+        padding:10px;
+        border-radius:8px;
+        text-align:center'>
 <h3 style='color:white;margin:0'>📈 Grafik RPM</h3>
+            
 </div>
 """, unsafe_allow_html=True)
 
@@ -156,7 +161,7 @@ st.plotly_chart(fig_rpm, use_container_width=True)
 st.write("")
 
 st.markdown("""
-<div style='background:#0b3d91;padding:10px;border-radius:8px'>
+<div style='background:#0b3d91;padding:10px;border-radius:8px; text-align:center''>
 <h3 style='color:white;margin:0'>📉 Grafik Getaran</h3>
 </div>
 """, unsafe_allow_html=True)
