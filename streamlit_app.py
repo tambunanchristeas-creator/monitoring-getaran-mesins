@@ -21,41 +21,86 @@ SUPABASE_KEY = "sb_publishable_sqyi_4r3w3JiIR8wTyLG9g_0_oMexT7"
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ======================
-# STYLE CSS
+# STYLE CSS (LIGHT MODE)
 # ======================
 st.markdown("""
 <style>
-body {
-    background-color: #0e1117;
+
+/* Background utama */
+[data-testid="stAppViewContainer"] {
+    background-color: #ffffff;
 }
+
+/* Semua teks jadi hitam */
+html, body, [class*="css"] {
+    color: #000000 !important;
+}
+
+/* Header biru tua */
+.main-header {
+    background-color: #0b3d91;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    color: white;
+    font-size: 32px;
+    font-weight: bold;
+}
+
+/* Sub caption */
+.subtitle {
+    text-align: center;
+    color: #333333;
+    margin-bottom: 25px;
+}
+
+/* Card style */
 .metric-card {
     padding: 25px;
     border-radius: 15px;
     text-align: center;
-    color: white;
-    box-shadow: 0px 0px 15px rgba(0,0,0,0.4);
+    color: black;
+    box-shadow: 0px 4px 15px rgba(0,0,0,0.1);
+    background-color: #f8f9fa;
 }
-.rpm {background: linear-gradient(135deg,#1f77b4,#4fa3ff);}
-.vibration {background: linear-gradient(135deg,#ff7f0e,#ffb347);}
-.normal {background: linear-gradient(135deg,#2ecc71,#27ae60);}
-.warning {background: linear-gradient(135deg,#f1c40f,#f39c12);}
-.danger {background: linear-gradient(135deg,#e74c3c,#c0392b);}
+
+/* Status colors */
+.normal {
+    border-left: 8px solid #2ecc71;
+}
+.warning {
+    border-left: 8px solid #f39c12;
+}
+.danger {
+    border-left: 8px solid #e74c3c;
+}
+
 .metric-value {
     font-size: 42px;
     font-weight: bold;
 }
+
 .metric-label {
     font-size: 18px;
-    opacity: 0.9;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 # ======================
 # JUDUL
 # ======================
-st.markdown("## ⚙️ **Monitoring Getaran & RPM Mesin Industri**")
-st.caption("Selamat Datang Di Website Pemantauan")
+st.markdown("""
+<div class="main-header">
+⚙️ Monitoring Getaran & RPM Mesin Industri
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+<div class="subtitle">
+Sistem Monitoring Real-Time Berbasis IoT
+</div>
+""", unsafe_allow_html=True)
 
 # ======================
 # AMBIL DATA
@@ -137,7 +182,7 @@ with left:
         markers=True
     )
     fig_rpm.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         height=400
     )
     st.plotly_chart(fig_rpm, use_container_width=True)
@@ -151,7 +196,7 @@ with right:
         markers=True
     )
     fig_vib.update_layout(
-        template="plotly_dark",
+        template="plotly_white",
         height=400
     )
     st.plotly_chart(fig_vib, use_container_width=True)
