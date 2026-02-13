@@ -35,7 +35,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # HEADER
 # ======================
 st.markdown("""
-<div style='background-color:#0b3d91;padding:25px;border-radius:12px'>
+<div style='background-color:#0b3d91;padding:25px;border-radius:1 px'>
 <h1 style='color:white;text-align:center;margin:0;'>
 ⚙️ Monitoring Getaran & RPM Mesin Industri ⚙️
 </h1>
@@ -52,9 +52,9 @@ st.write("")
 # ======================
 @st.cache_data(ttl=5)
 def load_data():
-    response = supabase.table("maintable") \
+    response = supabase.table("monitoring") \
         .select("*") \
-        .order("time", desc=True) \
+        .order("TIME", desc=True) \
         .limit(100) \
         .execute()
 
@@ -68,9 +68,9 @@ if df.empty:
 
 latest = df.iloc[0]
 
-rpm = latest["rpm"]
-vibration = latest["vibration"]
-status = latest["status"]
+rpm = latest["RPM"]
+vibration = latest["VIBRATION"]
+status = latest["STATUS"]
 
 # ======================
 # STATUS COLOR
@@ -130,61 +130,50 @@ st.divider()
 # ======================
 # JUDUL GRAFIK BIRU
 # ======================
-st.markdown("""
-<div style='
-        background:#0b3d91;
-        padding:10px;
-        border-radius:8px;
-        text-align:center'>
-<h3 style='color:white;margin:0'>📈 Grafik RPM</h3>
-            
-</div>
-""", unsafe_allow_html=True)
+# Grafik RPM
+col_g1, col_g2 = st.columns(2)
 
-fig_rpm = px.line(
-    df.sort_values("time"),
-    x="time",
-    y="rpm"
-)
+with col_g1:
+    st.markdown("""
+    <div style='
+            background:#0b3d91;
+            padding:10px;
+            border-radius:8px;
+            text-align:center'>
+    <h3 style='color:white;margin:0'>📈 Grafik RPM</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
-fig_rpm.update_traces(line_color="red")
+    fig_rpm = px.line(
+        df.sort_values("TIME"),
+        x="TIME",
+        y="RPM",
+    )
 
-fig_rpm.update_layout(
-    plot_bgcolor="black",
-    paper_bgcolor="black",
-    font=dict(color="white"),
-    height=400
-)
+    fig_rpm.update_traces(line_color="blue")
+    st.plotly_chart(fig_rpm, use_container_width=True)
 
-st.plotly_chart(fig_rpm, use_container_width=True)
 
-st.write("")
+# Grafik Getaran
+with col_g2:
+    st.markdown("""
+    <div style='
+            background:#0b3d91;
+            padding:10px;
+            border-radius:8px;
+            text-align:center'>
+    <h3 style='color:white;margin:0'>📉 Grafik Getaran</h3>
+    </div>
+    """, unsafe_allow_html=True)
 
-st.markdown("""
-<div style='background:#0b3d91;padding:10px;border-radius:8px; text-align:center''>
-<h3 style='color:white;margin:0'>📉 Grafik Getaran</h3>
-</div>
-""", unsafe_allow_html=True)
+    fig_vib = px.line(
+        df.sort_values("TIME"),
+        x="TIME",
+        y="VIBRATION",
+    )
 
-fig_vib = px.line(
-    df.sort_values("time"),
-    x="time",
-    y="vibration"
-)
-
-fig_vib.update_traces(line_color="red")
-
-fig_vib.update_layout(
-    plot_bgcolor="black",
-    paper_bgcolor="black",
-    font=dict(color="white"),
-    height=400
-)
-
-st.plotly_chart(fig_vib, use_container_width=True)
-
-st.write("")
-st.divider()
+    fig_vib.update_traces(line_color="blue")
+    st.plotly_chart(fig_vib, use_container_width=True)
 
 # ======================
 # DATA MONITORING HEADER
@@ -211,7 +200,7 @@ tbody tr td {
 """, unsafe_allow_html=True)
 
 st.dataframe(
-    df.sort_values("time", ascending=False),
+    df.sort_values("TIME", ascending=False),
     use_container_width=True,
     height=350
 )
