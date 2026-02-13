@@ -13,6 +13,17 @@ st.set_page_config(
 )
 
 # ======================
+# BACKGROUND PUTIH GLOBAL
+# ======================
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] {
+    background-color: white;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ======================
 # KONFIGURASI SUPABASE
 # ======================
 SUPABASE_URL = "https://qpefflvoxwtbqssimbev.supabase.co"
@@ -25,10 +36,10 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ======================
 st.markdown("""
 <div style='background-color:#0b3d91;padding:25px;border-radius:12px'>
-<h1 style='color:chocolate;text-align:center;margin:0;'>
+<h1 style='color:white;text-align:center;margin:0;'>
 ⚙️ Monitoring Getaran & RPM Mesin Industri ⚙️
 </h1>
-<p style='color:chocolate;text-align:center;margin:0;'>
+<p style='color:white;text-align:center;margin:0;'>
 Sistem Monitoring Real-Time Berbasis PLC, ESP32 & IoT
 </p>
 </div>
@@ -62,56 +73,54 @@ vibration = latest["vibration"]
 status = latest["status"]
 
 # ======================
-# WARNA STATUS DINAMIS
+# STATUS COLOR
 # ======================
 if status.lower() == "normal":
-    color = "#2ecc71"
+    status_color = "#2ecc71"
 elif status.lower() in ["unsatisfactory", "warning"]:
-    color = "#f1c40f"
+    status_color = "#f1c40f"
 else:
-    color = "#e74c3c"
+    status_color = "#e74c3c"
 
 # ======================
 # KPI CARDS
 # ======================
 col1, col2, col3 = st.columns(3)
 
+card_style = """
+background:#5a2d0c;
+padding:25px;
+border-radius:15px;
+box-shadow:0 4px 12px rgba(0,0,0,0.2);
+text-align:center;
+"""
+
 with col1:
     st.markdown(f"""
-    <div style='
-        background:chocolate;
-        padding:25px;
-        border-radius:15px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.1);
-        text-align:center'>
-        <h3 style='color:black'>RPM Mesin</h3>
-        <h1 style='color:black'>{rpm}</h1>
+    <div style='{card_style}'>
+        <h3 style='color:white'>RPM Mesin</h3>
+        <h1 style='color:white'>{rpm}</h1>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
-    <div style='
-        background:chocolate;
-        padding:25px;
-        border-radius:15px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.1);
-        text-align:center'>
-        <h3 style='color:black'>Getaran (mm/s)</h3>
-        <h1 style='color:black'>{vibration}</h1>
+    <div style='{card_style}'>
+        <h3 style='color:white'>Getaran (mm/s)</h3>
+        <h1 style='color:white'>{vibration}</h1>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
     st.markdown(f"""
     <div style='
-        background:{color};
+        background:{status_color};
         padding:25px;
         border-radius:15px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.1);
+        box-shadow:0 4px 12px rgba(0,0,0,0.2);
         text-align:center'>
-        <h3 style='color:black'>Status Mesin</h3>
-        <h1 style='color:black'>{status.upper()}</h1>
+        <h3 style='color:white'>Status Mesin</h3>
+        <h1 style='color:white'>{status.upper()}</h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -119,50 +128,83 @@ st.write("")
 st.divider()
 
 # ======================
-# GRAFIK
+# JUDUL GRAFIK BIRU
 # ======================
-col_left, col_right = st.columns(2)
+st.markdown("""
+<div style='background:#0b3d91;padding:10px;border-radius:8px'>
+<h3 style='color:white;margin:0'>📈 Grafik RPM</h3>
+</div>
+""", unsafe_allow_html=True)
 
-with col_left:
-    st.subheader("📈 Grafik RPM")
-    fig_rpm = px.line(
-        df.sort_values("time"),
-        x="time",
-        y="rpm",
-        markers=True,
-        line_shape="spline"
-    )
-    fig_rpm.update_layout(
-        template="plotly_white",
-        height=400,
-        xaxis_title="Waktu",
-        yaxis_title="RPM"
-    )
-    st.plotly_chart(fig_rpm, use_container_width=True)
+fig_rpm = px.line(
+    df.sort_values("time"),
+    x="time",
+    y="rpm"
+)
 
-with col_right:
-    st.subheader("📉 Grafik Getaran")
-    fig_vib = px.line(
-        df.sort_values("time"),
-        x="time",
-        y="vibration",
-        markers=True,
-        line_shape="spline"
-    )
-    fig_vib.update_layout(
-        template="plotly_white",
-        height=400,
-        xaxis_title="Waktu",
-        yaxis_title="mm/s"
-    )
-    st.plotly_chart(fig_vib, use_container_width=True)
+fig_rpm.update_traces(line_color="red")
 
+fig_rpm.update_layout(
+    plot_bgcolor="black",
+    paper_bgcolor="black",
+    font=dict(color="white"),
+    height=400
+)
+
+st.plotly_chart(fig_rpm, use_container_width=True)
+
+st.write("")
+
+st.markdown("""
+<div style='background:#0b3d91;padding:10px;border-radius:8px'>
+<h3 style='color:white;margin:0'>📉 Grafik Getaran</h3>
+</div>
+""", unsafe_allow_html=True)
+
+fig_vib = px.line(
+    df.sort_values("time"),
+    x="time",
+    y="vibration"
+)
+
+fig_vib.update_traces(line_color="red")
+
+fig_vib.update_layout(
+    plot_bgcolor="black",
+    paper_bgcolor="black",
+    font=dict(color="white"),
+    height=400
+)
+
+st.plotly_chart(fig_vib, use_container_width=True)
+
+st.write("")
 st.divider()
 
 # ======================
-# TABEL DATA
+# DATA MONITORING HEADER
 # ======================
-st.subheader("📋 Data Monitoring Terakhir")
+st.markdown("""
+<div style='background:#5a2d0c;padding:10px;border-radius:8px'>
+<h3 style='color:white;margin:0'>📋 Data Monitoring Terakhir</h3>
+</div>
+""", unsafe_allow_html=True)
+
+# ======================
+# STYLE TABEL PUTIH
+# ======================
+st.markdown("""
+<style>
+thead tr th {
+    background-color: #5a2d0c !important;
+    color: white !important;
+}
+tbody tr td {
+    color: white !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.dataframe(
     df.sort_values("time", ascending=False),
     use_container_width=True,
