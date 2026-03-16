@@ -5,9 +5,9 @@ import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
-# AUTO REFRESH 20 DETIK
+# AUTO REFRESH 2 DETIK
 # ======================
-st_autorefresh(interval=5000, key="refresh")
+st_autorefresh(interval=2000, key="refresh")
 
 # ======================
 # KONFIGURASI HALAMAN
