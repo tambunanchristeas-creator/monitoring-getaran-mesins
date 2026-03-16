@@ -7,7 +7,7 @@ from streamlit_autorefresh import st_autorefresh
 # ======================
 # AUTO REFRESH 20 DETIK
 # ======================
-st_autorefresh(interval=20000, key="refresh")
+st_autorefresh(interval=5000, key="refresh")
 
 # ======================
 # KONFIGURASI HALAMAN
