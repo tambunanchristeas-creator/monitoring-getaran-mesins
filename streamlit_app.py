@@ -2,6 +2,12 @@ import streamlit as st
 from supabase import create_client, Client
 import pandas as pd
 import plotly.express as px
+from streamlit_autorefresh import st_autorefresh
+
+# ======================
+# AUTO REFRESH 20 DETIK
+# ======================
+st_autorefresh(interval=20000, key="refresh")
 
 # ======================
 # KONFIGURASI HALAMAN
