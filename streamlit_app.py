@@ -223,7 +223,7 @@ tbody tr td {
 """, unsafe_allow_html=True)
 
 st.dataframe(
-    df.sort_values("Waktu", ascending=False),
+    df.sort_values("TIME", ascending=False),
     use_container_width=True,
     height=400,
     hide_index=True
