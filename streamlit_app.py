@@ -175,7 +175,7 @@ with col_g2:
     fig_vib = px.line(
         df.sort_values("TIME"),
         x="TIME",
-        y="VIBRATION",
+        y="Vrms(mm/s)",
     )
 
     fig_vib.update_traces(line_color="blue")
