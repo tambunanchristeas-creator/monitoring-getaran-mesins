@@ -80,7 +80,7 @@ df["Vrms(mm/s)"] = df["Vrms(mm/s)"].astype(float).round(2)
 df = df.rename(columns={
     "id": "No",
     "RPM": "RPM",
-    "Vrms(mm/s)": "Vrms (mm/s)",
+    "Vrms(mm/s)": "Vrms(mm/s)",
     "STATUS": "Status",
     "TIME": "Waktu"
 })
