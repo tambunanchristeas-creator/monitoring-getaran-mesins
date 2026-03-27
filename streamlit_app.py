@@ -70,7 +70,16 @@ df = load_data()
 # ======================
 # FORMAT DATA BIAR RAPI
 # ======================
-df["TIME"] = pd.to_datetime(df["TIME"]).dt.strftime("%d-%m-%Y %H:%M:%S")
+df = load_data()
+
+# KHUSUS GRAFIK (HARUS DATETIME)
+df["TIME"] = pd.to_datetime(df["TIME"])
+
+# BUAT COPY UNTUK TABEL
+df_table = df.copy()
+
+# FORMAT HANYA UNTUK TABEL
+df_table["TIME"] = df_table["TIME"].dt.strftime("%d-%m-%Y %H:%M:%S")
 
 # Pembulatan angka
 df["RPM"] = df["RPM"].astype(int)
