@@ -80,6 +80,8 @@ df_table = df.copy()
 # FORMAT HANYA UNTUK TABEL
 df_table["TIME"] = df_table["TIME"].dt.strftime("%d-%m-%Y %H:%M:%S")
 
+df_plot = df.sort_values("TIME").tail(30)
+
 # Pembulatan angka
 df["RPM"] = df["RPM"].astype(int)
 df["Vrms(mm/s)"] = df["Vrms(mm/s)"].astype(float).round(2)
@@ -164,6 +166,7 @@ st.divider()
 # Grafik RPM
 col_g1, col_g2 = st.columns(2)
 
+# Grafik RPM
 with col_g1:
     st.markdown("""
     <div style='
@@ -183,7 +186,6 @@ with col_g1:
 
     fig_rpm.update_traces(line_color="blue")
     st.plotly_chart(fig_rpm, use_container_width=True)
-
 
 # Grafik Getaran
 with col_g2:
