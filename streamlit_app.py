@@ -84,13 +84,13 @@ df_plot = df.sort_values("TIME").tail(30)
 
 # Pembulatan angka
 df["RPM"] = df["RPM"].astype(int)
-df["Vrms(mm/s)"] = df["Vrms(mm/s)"].astype(float).round(2)
+df["Vrms"] = df["Vrms"].astype(float).round(2)
 
 # Rename kolom biar lebih clean
 df = df.rename(columns={
     "id": "No",
     "RPM": "RPM",
-    "Vrms(mm/s)": "Vrms(mm/s)",
+    "Vrms": "Vrms(mm/s)",
     "STATUS": "STATUS",
     "TIME": "TIME"
 })
@@ -102,7 +102,7 @@ if df.empty:
 latest = df.iloc[0]
 
 rpm = latest["RPM"]
-vibration = latest["Vrms(mm/s)"]
+vibration = latest["Vrms"]
 status = latest["STATUS"]
 
 # ======================
@@ -202,7 +202,7 @@ with col_g2:
     fig_vib = px.line(
         df.sort_values("TIME"),
         x="TIME",
-        y="Vrms(mm/s)",
+        y="Vrms",
     )
 
     fig_vib.update_traces(line_color="blue")
