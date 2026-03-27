@@ -46,7 +46,7 @@ st.markdown("""
 ⚙️ Monitoring Getaran & RPM Mesin Industri ⚙️
 </h1>
 <p style='color:white;text-align:center;margin:0;'>
-Sistem Monitoring Real-Time Berbasis PLC, ESP32 & IoT
+Selamat Datang Di Sistem Monitoring Real-Time Berbasis PLC, ESP32 & IoT
 </p>
 </div>
 """, unsafe_allow_html=True)
