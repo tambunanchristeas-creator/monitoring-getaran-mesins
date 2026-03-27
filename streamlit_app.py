@@ -67,6 +67,23 @@ def load_data():
     return pd.DataFrame(response.data)
 
 df = load_data()
+# ======================
+# FORMAT DATA BIAR RAPI
+# ======================
+df["TIME"] = pd.to_datetime(df["TIME"]).dt.strftime("%d-%m-%Y %H:%M:%S")
+
+# Pembulatan angka
+df["RPM"] = df["RPM"].astype(int)
+df["Vrms(mm/s)"] = df["Vrms(mm/s)"].astype(float).round(2)
+
+# Rename kolom biar lebih clean
+df = df.rename(columns={
+    "id": "No",
+    "RPM": "RPM",
+    "Vrms(mm/s)": "Vrms (mm/s)",
+    "STATUS": "Status",
+    "TIME": "Waktu"
+})
 
 if df.empty:
     st.warning("Belum ada data dari mesin")
@@ -206,9 +223,10 @@ tbody tr td {
 """, unsafe_allow_html=True)
 
 st.dataframe(
-    df.sort_values("TIME", ascending=False),
+    df.sort_values("Waktu", ascending=False),
     use_container_width=True,
-    height=350
+    height=400,
+    hide_index=True
 )
 
 st.caption("Auto refresh setiap 5 detik")
