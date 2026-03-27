@@ -104,7 +104,7 @@ text-align:center;
 with col1:
     st.markdown(f"""
     <div style='{card_style}'>
-        <h3 style='color:white'>RPM Mesin</h3>
+        <h3 style='color:white'>Kecepatan Putar Mesin (RPM)</h3>
         <h1 style='color:white'>{rpm}</h1>
     </div>
     """, unsafe_allow_html=True)
@@ -112,7 +112,7 @@ with col1:
 with col2:
     st.markdown(f"""
     <div style='{card_style}'>
-        <h3 style='color:white'>Getaran (mm/s)</h3>
+        <h3 style='color:white'>Kecepatan Getaran Vrms (mm/s)</h3>
         <h1 style='color:white'>{vibration}</h1>
     </div>
     """, unsafe_allow_html=True)
