@@ -81,8 +81,8 @@ df = df.rename(columns={
     "id": "No",
     "RPM": "RPM",
     "Vrms(mm/s)": "Vrms(mm/s)",
-    "STATUS": "Status",
-    "TIME": "Waktu"
+    "STATUS": "STATUS",
+    "TIME": "TIME"
 })
 
 if df.empty:
