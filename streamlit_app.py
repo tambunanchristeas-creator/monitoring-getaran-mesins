@@ -70,7 +70,7 @@ df = load_data()
 # ======================
 # FORMAT DATA BIAR RAPI
 # ======================
-df["TIME"] = pd.to_datetime(df["TIME"]).dt.strftime("%H:%M\n%b %d, %Y")
+df["TIME"] = pd.to_datetime(df["TIME"]).dt.strftime("%d-%m-%Y %H:%M:%S")
 
 # Pembulatan angka
 df["RPM"] = df["RPM"].astype(int)
