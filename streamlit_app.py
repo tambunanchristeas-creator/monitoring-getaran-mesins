@@ -195,7 +195,7 @@ with col_g2:
             padding:10px;
             border-radius:8px;
             text-align:center'>
-    <h3 style='color:white;margin:0'>📉 Grafik Kecepatan Getaran (Vrms)</h3>
+    <h3 style='color:white;margin:0'>📉 Grafik Kecepatan Getaran Vrms (mm/s)</h3>
     </div>
     """, unsafe_allow_html=True)
 
