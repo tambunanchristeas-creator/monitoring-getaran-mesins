@@ -195,7 +195,7 @@ with col_g2:
             padding:10px;
             border-radius:8px;
             text-align:center'>
-    <h3 style='color:white;margin:0'>📉 Grafik Getaran</h3>
+    <h3 style='color:white;margin:0'>📉 Grafik Kecepatan Getaran</h3>
     </div>
     """, unsafe_allow_html=True)
 
