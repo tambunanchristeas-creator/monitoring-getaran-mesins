@@ -70,7 +70,6 @@ df = load_data()
 # ======================
 # FORMAT DATA BIAR RAPI
 # ======================
-df = load_data()
 
 # KHUSUS GRAFIK (HARUS DATETIME)
 df["TIME"] = pd.to_datetime(df["TIME"])
