@@ -75,7 +75,7 @@ if df.empty:
 latest = df.iloc[0]
 
 rpm = latest["RPM"]
-vibration = latest["VIBRATION"]
+vibration = latest["Vrms(mm/s)"]
 status = latest["STATUS"]
 
 # ======================
