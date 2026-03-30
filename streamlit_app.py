@@ -6,9 +6,9 @@ import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
-# AUTO REFRESH 0,5 DETIK
+# AUTO REFRESH 0,1 DETIK
 # ======================
-st_autorefresh(interval=1000, key="refresh")
+st_autorefresh(interval=100, key="refresh")
 
 # ======================
 # PAGE CONFIG
@@ -73,7 +73,7 @@ status = latest["STATUS"]
 # HEADER
 # ======================
 st.markdown("""
-<h1 style='text-align:center'>⚙️ INDUSTRIAL MACHINE MONITORING ⚙️</h1>
+<h1 style='text-align:center'>⚙️ INDUSTRIAL MACHINE MONITORING ⚙️update</h1>
 <p style='text-align:center'>PLC • ESP32 • IoT • REALTIME SYSTEM</p>
 """, unsafe_allow_html=True)
 
