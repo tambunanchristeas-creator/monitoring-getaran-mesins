@@ -1,103 +1,67 @@
 import streamlit as st
-from supabase import create_client, Client
+from supabase import create_client
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
-# AUTO REFRESH 0,5 DETIK
+# AUTO REFRESH 20 DETIK
 # ======================
-st_autorefresh(interval=500, key="refresh")
+st_autorefresh(interval=20000, key="refresh")
 
 # ======================
-# KONFIGURASI HALAMAN
+# PAGE CONFIG
 # ======================
-st.set_page_config(
-    page_title="Monitoring Getaran Mesin",
-    page_icon="⚙️",
-    layout="wide"
-)
+st.set_page_config(layout="wide")
 
 # ======================
-# BACKGROUND PUTIH GLOBAL
+# DARK INDUSTRIAL STYLE
 # ======================
 st.markdown("""
 <style>
 [data-testid="stAppViewContainer"] {
-    background-color: white;
+    background-color: #0f172a;
+    color: white;
+}
+h1,h2,h3,h4,p {
+    color:white;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ======================
-# KONFIGURASI SUPABASE
+# SUPABASE
 # ======================
 SUPABASE_URL = "https://qpefflvoxwtbqssimbev.supabase.co"
-SUPABASE_KEY = "sb_publishable_sqyi_4r3w3JiIR8wTyLG9g_0_oMexT7"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwZWZmbHZveHd0YnFzc2ltYmV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MzIzODUsImV4cCI6MjA4NjIwODM4NX0.tG6y6MoAvdgIOPHAYTpDJ-GO8pLIRrEn5vmsSo1PZFo"
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-# ======================
-# HEADER
-# ======================
-st.markdown("""
-<div style='background-color:#0b3d91;padding:25px;border-radius:1 px'>
-<h1 style='color:white;text-align:center;margin:0;'>
-⚙️ Monitoring Getaran & RPM Mesin Industri ⚙️
-</h1>
-<p style='color:white;text-align:center;margin:0;'>
-Selamat Datang Di Sistem Monitoring Real-Time Berbasis PLC, ESP32 & IoT
-</p>
-</div>
-""", unsafe_allow_html=True)
-
-st.write("")
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ======================
-# AMBIL DATA
+# LOAD DATA
 # ======================
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=20)
 def load_data():
-    response = supabase.table("monitoring") \
-        .select("*") \
-        .order("TIME", desc=True) \
-        .limit(100) \
+    res = supabase.table("monitoring")\
+        .select("*")\
+        .order("TIME", desc=True)\
+        .limit(100)\
         .execute()
-
-    return pd.DataFrame(response.data)
+    return pd.DataFrame(res.data)
 
 df = load_data()
-# ======================
-# FORMAT DATA BIAR RAPI
-# ======================
-
-# KHUSUS GRAFIK (HARUS DATETIME)
-df["TIME"] = pd.to_datetime(df["TIME"])
-
-# BUAT COPY UNTUK TABEL
-df_table = df.copy()
-
-# FORMAT HANYA UNTUK TABEL
-df_table["TIME"] = df_table["TIME"].dt.strftime("%d-%m-%Y %H:%M:%S")
-
-df_plot = df.sort_values("TIME").tail(30)
-
-# Pembulatan angka
-df["RPM"] = df["RPM"].astype(int)
-df["Vrms"] = df["Vrms"].astype(float).round(2)
-
-# Rename kolom biar lebih clean
-df = df.rename(columns={
-    "id": "No",
-    "RPM": "RPM",
-    "Vrms": "Vrms",
-    "STATUS": "STATUS",
-    "TIME": "TIME"
-})
 
 if df.empty:
-    st.warning("Belum ada data dari mesin")
+    st.warning("Belum ada data")
     st.stop()
+
+# ======================
+# FORMAT DATA
+# ======================
+df["TIME"] = pd.to_datetime(df["TIME"])
+df["RPM"] = df["RPM"].astype(int)
+df["Vrms"] = df["Vrms"].astype(float).round(2)
 
 latest = df.iloc[0]
 
@@ -106,137 +70,88 @@ vibration = latest["Vrms"]
 status = latest["STATUS"]
 
 # ======================
-# STATUS COLOR
+# HEADER
 # ======================
-if status.lower() == "normal":
-    status_color = "#2ecc71"
-elif status.lower() in ["unsatisfactory", "warning"]:
-    status_color = "#f1c40f"
-else:
-    status_color = "#e74c3c"
+st.markdown("""
+<h1 style='text-align:center'>⚙️ INDUSTRIAL MACHINE MONITORING</h1>
+<p style='text-align:center'>PLC • ESP32 • IoT • REALTIME SYSTEM</p>
+""", unsafe_allow_html=True)
 
 # ======================
-# KPI CARDS
+# ALARM PANEL
 # ======================
-col1, col2, col3 = st.columns(3)
+if status.lower() == "danger":
+    st.markdown("""
+    <div style='background:red;padding:20px;border-radius:10px;text-align:center;
+    animation: blink 1s infinite'>
+    <h1>🚨 DANGER - GETARAN TINGGI 🚨</h1>
+    </div>
+    <style>
+    @keyframes blink {50% {opacity:0.4;}}
+    </style>
+    """, unsafe_allow_html=True)
 
-card_style = """
-background:#5a2d0c;
-padding:25px;
-border-radius:15px;
-box-shadow:0 4px 12px rgba(0,0,0,0.2);
-text-align:center;
-"""
-
-with col1:
-    st.markdown(f"""
-    <div style='{card_style}'>
-        <h3 style='color:white'>Kecepatan Putaran Mesin (RPM)</h3>
-        <h1 style='color:white'>{rpm}</h1>
+elif status.lower() == "warning":
+    st.markdown("""
+    <div style='background:orange;padding:20px;border-radius:10px;text-align:center'>
+    <h1>⚠ WARNING - PERLU PENGECEKAN</h1>
     </div>
     """, unsafe_allow_html=True)
+
+# ======================
+# KPI + GAUGE
+# ======================
+col1, col2 = st.columns(2)
+
+with col1:
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=rpm,
+        title={'text': "RPM Mesin"},
+        gauge={
+            'axis': {'range': [0, 2000]},
+            'steps': [
+                {'range': [0, 1200], 'color': "green"},
+                {'range': [1200, 1500], 'color': "yellow"},
+                {'range': [1500, 2000], 'color': "red"}
+            ]
+        }
+    ))
+    st.plotly_chart(fig_gauge, use_container_width=True)
 
 with col2:
     st.markdown(f"""
-    <div style='{card_style}'>
-        <h3 style='color:white'>Kecepatan Getaran Vrms (mm/s)</h3>
-        <h1 style='color:white'>{vibration}</h1>
+    <div style='background:#1e293b;padding:30px;border-radius:10px;text-align:center'>
+        <h2>Getaran (Vrms)</h2>
+        <h1>{vibration} mm/s</h1>
+        <h2>Status: {status}</h2>
     </div>
     """, unsafe_allow_html=True)
 
-with col3:
-    st.markdown(f"""
-    <div style='
-        background:{status_color};
-        padding:25px;
-        border-radius:15px;
-        box-shadow:0 4px 12px rgba(0,0,0,0.2);
-        text-align:center'>
-        <h3 style='color:white'>Status Mesin</h3>
-        <h1 style='color:white'>{status.upper()}</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-st.write("")
 st.divider()
 
 # ======================
-# JUDUL GRAFIK BIRU
+# GRAFIK
 # ======================
-# Grafik RPM
-col_g1, col_g2 = st.columns(2)
+colg1, colg2 = st.columns(2)
 
-# Grafik RPM
-with col_g1:
-    st.markdown("""
-    <div style='
-            background:#0b3d91;
-            padding:10px;
-            border-radius:8px;
-            text-align:center'>
-    <h3 style='color:white;margin:0'>📈 Grafik RPM</h3>
-    </div>
-    """, unsafe_allow_html=True)
+df_plot = df.sort_values("TIME").tail(50)
 
-    fig_rpm = px.line(
-        df.sort_values("TIME"),
-        x="TIME",
-        y="RPM",
-    )
-
-    fig_rpm.update_traces(line_color="blue")
+with colg1:
+    fig_rpm = px.line(df_plot, x="TIME", y="RPM")
+    fig_rpm.update_layout(title="Grafik RPM")
     st.plotly_chart(fig_rpm, use_container_width=True)
 
-# Grafik Getaran
-with col_g2:
-    st.markdown("""
-    <div style='
-            background:#0b3d91;
-            padding:10px;
-            border-radius:8px;
-            text-align:center'>
-    <h3 style='color:white;margin:0'>📉 Grafik Kecepatan Getaran Vrms (mm/s)</h3>
-    </div>
-    """, unsafe_allow_html=True)
-
-    fig_vib = px.line(
-        df.sort_values("TIME"),
-        x="TIME",
-        y="Vrms",
-    )
-
-    fig_vib.update_traces(line_color="blue")
+with colg2:
+    fig_vib = px.line(df_plot, x="TIME", y="VIBRATION")
+    fig_vib.add_hline(y=4, line_dash="dash", line_color="yellow")
+    fig_vib.add_hline(y=7, line_dash="dash", line_color="red")
+    fig_vib.update_layout(title="Grafik Getaran")
     st.plotly_chart(fig_vib, use_container_width=True)
 
-# ======================
-# DATA MONITORING HEADER
-# ======================
-st.markdown("""
-<div style='background:#5a2d0c;padding:10px;border-radius:8px'>
-<h3 style='color:white;margin:0'>📋 Data Monitoring Terakhir</h3>
-</div>
-""", unsafe_allow_html=True)
+st.divider()
 
 # ======================
-# STYLE TABEL PUTIH
+# TABEL
 # ======================
-st.markdown("""
-<style>
-thead tr th {
-    background-color: #5a2d0c !important;
-    color: white !important;
-}
-tbody tr td {
-    color: white !important;
-}
-</style>
-""", unsafe_allow_html=True)
-
-st.dataframe(
-    df.sort_values("TIME", ascending=False),
-    use_container_width=True,
-    height=400,
-    hide_index=True
-)
-
-st.caption("Auto refresh setiap 5 detik")
+st.dataframe(df.sort_values("TIME", ascending=False), use_container_width=True)
