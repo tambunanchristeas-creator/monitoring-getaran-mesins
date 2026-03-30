@@ -6,9 +6,9 @@ import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
-# AUTO REFRESH 20 DETIK
+# AUTO REFRESH 0,5 DETIK
 # ======================
-st_autorefresh(interval=20000, key="refresh")
+st_autorefresh(interval=500, key="refresh")
 
 # ======================
 # PAGE CONFIG
