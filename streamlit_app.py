@@ -143,7 +143,7 @@ with colg1:
     st.plotly_chart(fig_rpm, use_container_width=True)
 
 with colg2:
-    fig_vib = px.line(df_plot, x="TIME", y="VIBRATION")
+    fig_vib = px.line(df_plot, x="TIME", y="Vrms")
     fig_vib.add_hline(y=4, line_dash="dash", line_color="yellow")
     fig_vib.add_hline(y=7, line_dash="dash", line_color="red")
     fig_vib.update_layout(title="Grafik Getaran")
