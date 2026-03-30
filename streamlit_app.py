@@ -8,7 +8,7 @@ from streamlit_autorefresh import st_autorefresh
 # ======================
 # AUTO REFRESH 0,1 DETIK
 # ======================
-st_autorefresh(interval=100, key="refresh")
+st_autorefresh(interval=200, key="refresh")
 
 # ======================
 # PAGE CONFIG
