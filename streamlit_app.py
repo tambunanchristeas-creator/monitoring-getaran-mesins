@@ -73,7 +73,7 @@ status = latest["STATUS"]
 # HEADER
 # ======================
 st.markdown("""
-<h1 style='text-align:center'>⚙️ INDUSTRIAL MACHINE MONITORING ⚙️update</h1>
+<h1 style='text-align:center'>⚙️ INDUSTRIAL MACHINE MONITORING ⚙️</h1>
 <p style='text-align:center'>PLC • ESP32 • IoT • REALTIME SYSTEM</p>
 """, unsafe_allow_html=True)
 
