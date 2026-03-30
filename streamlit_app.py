@@ -41,7 +41,7 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ======================
 # LOAD DATA
 # ======================
-@st.cache_data(ttl=20)
+@st.cache_data(ttl=5)
 def load_data():
     res = supabase.table("monitoring")\
         .select("*")\
