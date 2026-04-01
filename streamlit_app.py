@@ -113,7 +113,7 @@ with col1:
             'steps': [
                 {'range': [0, 1200], 'color': "green"},
                 {'range': [1200, 1500], 'color': "yellow"},
-                {'range': [1500, 2000], 'color': "red"}
+                {'range': [1500, 2500], 'color': "red"}
             ]
         }
     ))
