@@ -6,7 +6,7 @@ import plotly.graph_objects as go
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
-# AUTO REFRESH 0,5 DETIK
+# AUTO REFRESH 0,3 DETIK
 # ======================
 st_autorefresh(interval=300, key="refresh")
 
@@ -111,8 +111,8 @@ with col1:
         gauge={
             'axis': {'range': [0, 2500]},
             'steps': [
-                {'range': [0, 1200], 'color': "blue"},
-                {'range': [1200, 1500], 'color': "yellow"},
+                {'range': [0, 750], 'color': "blue"},
+                {'range': [750, 1500], 'color': "yellow"},
                 {'range': [1500, 2500], 'color': "red"}
             ]
         }
