@@ -111,7 +111,7 @@ with col1:
         gauge={
             'axis': {'range': [0, 2500]},
             'steps': [
-                {'range': [0, 1200], 'color': "green"},
+                {'range': [0, 1200], 'color': "blue"},
                 {'range': [1200, 1500], 'color': "yellow"},
                 {'range': [1500, 2500], 'color': "red"}
             ]
