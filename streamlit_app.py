@@ -109,7 +109,7 @@ with col1:
         value=rpm,
         title={'text': "RPM Mesin"},
         gauge={
-            'axis': {'range': [0, 2000]},
+            'axis': {'range': [0, 2500]},
             'steps': [
                 {'range': [0, 1200], 'color': "green"},
                 {'range': [1200, 1500], 'color': "yellow"},
