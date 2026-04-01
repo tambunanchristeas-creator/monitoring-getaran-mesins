@@ -112,8 +112,8 @@ with col1:
             'axis': {'range': [0, 2500]},
             'steps': [
                 {'range': [0, 750], 'color': "blue"},
-                {'range': [750, 1500], 'color': "yellow"},
-                {'range': [1500, 2500], 'color': "red"}
+                {'range': [750, 1700], 'color': "yellow"},
+                {'range': [1700, 2500], 'color': "red"}
             ]
         }
     ))
