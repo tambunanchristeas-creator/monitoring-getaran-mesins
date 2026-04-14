@@ -98,7 +98,40 @@ elif status.lower() == "warning":
     </div>
     """, unsafe_allow_html=True)
 
-if status.lower() == "warning":
+# ======================
+# KPI + GAUGE
+# ======================
+col1, col2 = st.columns(2)
+
+with col1:
+    fig_gauge = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=rpm,
+        title={'text': "RPM Mesin"},
+        gauge={
+            'axis': {'range': [0, 2500]},
+            'steps': [
+                {'range': [0, 833], 'color': "blue"},
+                {'range': [833, 1666], 'color': "yellow"},
+                {'range': [1666, 2500], 'color': "red"}
+            ]
+        }
+    ))
+    st.plotly_chart(fig_gauge, use_container_width=True)
+
+with col2:
+    st.markdown(f"""
+    <div style='background:#1e293b;padding:30px;border-radius:10px;text-align:center'>
+        <h2>Getaran (Vrms)</h2>
+        <h1>{vibration} mm/s</h1>
+        <h2>Status: {status}</h2>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ======================
+    # TOMBOL KONTROL (PINDAH KE SINI)
+    # ======================
+    if status.lower() == "warning":
         st.markdown("### ⚙️ Kontrol Mesin")
 
         col_btn1, col_btn2 = st.columns(2)
@@ -130,35 +163,6 @@ if status.lower() == "warning":
                     st.success("Perintah RUN dikirim!")
                 except Exception as e:
                     st.error(f"Gagal: {e}")
-# ======================
-# KPI + GAUGE
-# ======================
-col1, col2 = st.columns(2)
-
-with col1:
-    fig_gauge = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=rpm,
-        title={'text': "RPM Mesin"},
-        gauge={
-            'axis': {'range': [0, 2500]},
-            'steps': [
-                {'range': [0, 833], 'color': "blue"},
-                {'range': [833, 1666], 'color': "yellow"},
-                {'range': [1666, 2500], 'color': "red"}
-            ]
-        }
-    ))
-    st.plotly_chart(fig_gauge, use_container_width=True)
-
-with col2:
-    st.markdown(f"""
-    <div style='background:#1e293b;padding:30px;border-radius:10px;text-align:center'>
-        <h2>Getaran (Vrms)</h2>
-        <h1>{vibration} mm/s</h1>
-        <h2>Status: {status}</h2>
-    </div>
-    """, unsafe_allow_html=True)
 
 st.divider()
 
