@@ -98,6 +98,37 @@ elif status.lower() == "warning":
     </div>
     """, unsafe_allow_html=True)
 
+    st.markdown("### ⚙️ Kontrol Mesin")
+
+    col_btn1, col_btn2 = st.columns(2)
+
+    with col_btn1:
+        if st.button("🛑 MATIKAN MESIN", use_container_width=True):
+            try:
+                supabase.table("monitoring").insert({
+                    "RPM": rpm,
+                    "Vrms": vibration,
+                    "STATUS": status,
+                    "D310": 1   # perintah STOP
+                }).execute()
+
+                st.success("Perintah STOP dikirim!")
+            except Exception as e:
+                st.error(f"Gagal kirim perintah: {e}")
+
+    with col_btn2:
+        if st.button("▶️ HIDUPKAN MESIN", use_container_width=True):
+            try:
+                supabase.table("monitoring").insert({
+                    "RPM": rpm,
+                    "Vrms": vibration,
+                    "STATUS": status,
+                    "D310": 0   # perintah RUN
+                }).execute()
+
+                st.success("Perintah RUN dikirim!")
+            except Exception as e:
+                st.error(f"Gagal kirim perintah: {e}")
 # ======================
 # KPI + GAUGE
 # ======================
