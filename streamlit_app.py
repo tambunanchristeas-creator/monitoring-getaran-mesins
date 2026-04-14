@@ -138,24 +138,30 @@ with col2:
     # TOMBOL KONTROL (PINDAH KE SINI)
     # ======================
     if status.lower() == "warning":
-    st.markdown("""
-    <h3 style='text-align:center;'>⚙️ Kontrol Mesin</h3>
-    """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("""
+        <h3 style='text-align:center;'>⚙️ Kontrol Mesin</h3>
+        """, unsafe_allow_html=True)
 
-    # Tombol MATIKAN
-    if st.button("🔴 MATIKAN MESIN"):
-    supabase.table("control").insert({"perintah": 1}).execute()
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Tombol MATIKAN
+        if st.button("🔴 MATIKAN MESIN"):
+            try:
+                supabase.table("control").insert({"perintah": 1}).execute()
+                st.success("Perintah STOP Dikirim!")
+            except Exception as e:
+                st.error(f"Gagal: {e}")
 
     st.markdown("<br>", unsafe_allow_html=True)
 
     # Tombol HIDUPKAN
     if st.button("▶ HIDUPKAN MESIN"):
-    supabase.table("control").insert({"perintah": 0}).execute()
-    st.success("Perintah RUN dikirim!")
-    except Exception as e:
-                    st.error(f"Gagal: {e}")
+        try:
+            supabase.table("control").insert({"perintah": 0}).execute()
+            st.success("Perintah RUN dikirim!")
+        except Exception as e:
+            st.error(f"Gagal: {e}")
 
 st.divider()
 
