@@ -27,6 +27,12 @@ st.markdown("""
 h1,h2,h3,h4,p {
     color:white;
 }
+            
+/* Tombol STOP merah */
+button[kind="secondary"] {
+    background-color: red !important;
+    color: white !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
