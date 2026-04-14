@@ -145,24 +145,33 @@ with col2:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Tombol MATIKAN
-        if st.button("🔴 MATIKAN MESIN"):
-            try:
-                supabase.table("control").insert({"perintah": 1}).execute()
-                st.success("Perintah STOP Dikirim!")
-            except Exception as e:
-                st.error(f"Gagal: {e}")
+        with col_btn1:
+            if st.button("🛑 MATIKAN MESIN", use_container_width=True):
+                try:
+                    supabase.table("monitoring").insert({
+                        "RPM": rpm,
+                        "Vrms": vibration,
+                        "STATUS": status,
+                        "D310": 1
+                    }).execute()
 
-    st.markdown("<br>", unsafe_allow_html=True)
+                    st.success("Perintah STOP dikirim!")
+                except Exception as e:
+                    st.error(f"Gagal: {e}")
 
-    # Tombol HIDUPKAN
-    if st.button("▶ HIDUPKAN MESIN"):
-        try:
-            supabase.table("control").insert({"perintah": 0}).execute()
-            st.success("Perintah RUN dikirim!")
-        except Exception as e:
-            st.error(f"Gagal: {e}")
+        with col_btn2:
+            if st.button("▶️ HIDUPKAN MESIN", use_container_width=True):
+                try:
+                    supabase.table("monitoring").insert({
+                        "RPM": rpm,
+                        "Vrms": vibration,
+                        "STATUS": status,
+                        "D310": 0
+                    }).execute()
 
+                    st.success("Perintah RUN dikirim!")
+                except Exception as e:
+                    st.error(f"Gagal: {e}")
 st.divider()
 
 # ======================
