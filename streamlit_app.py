@@ -138,12 +138,9 @@ with col2:
     # TOMBOL KONTROL (PINDAH KE SINI)
     # ======================
     if status.lower() == "warning":
+        st.markdown("### ⚙️ Kontrol Mesin")
 
-        st.markdown("""
-        <h3 style='text-align:center;'>⚙️ Kontrol Mesin</h3>
-        """, unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
+        col_btn1, col_btn2 = st.columns(2)
 
         with col_btn1:
             if st.button("🛑 MATIKAN MESIN", use_container_width=True):
