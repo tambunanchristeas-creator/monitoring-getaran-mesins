@@ -3,12 +3,13 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import time
 from streamlit_autorefresh import st_autorefresh
 
 # ======================
 # AUTO REFRESH 0,3 DETIK
 # ======================
-st_autorefresh(interval=300, key="refresh")
+st_autorefresh(interval=1000, key="refresh")
 
 # ======================
 # PAGE CONFIG
@@ -45,9 +46,15 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # ======================
+# INIT SESSION STATE
+# ======================
+if "last_click" not in st.session_state:
+    st.session_state.last_click = 0
+
+# ======================
 # LOAD DATA
 # ======================
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=1)
 def load_data():
     res = supabase.table("monitoring")\
         .select("*")\
@@ -76,6 +83,16 @@ vibration = latest["Vrms"]
 status = latest["STATUS"]
 
 # ======================
+# AMBIL DATA CONTROL (D310)
+# ======================
+control_res = supabase.table("control").select("D310").eq("id", 1).execute()
+
+if len(control_res.data) > 0:
+    cmd = control_res.data[0]["D310"]
+else:
+    cmd = 0
+
+# ======================
 # HEADER
 # ======================
 st.markdown("""
@@ -88,13 +105,14 @@ st.markdown("""
 # ======================
 if status.lower() == "danger":
 
-    if rpm < 50:
+    if cmd == 0 and rpm < 50:
         st.markdown("""
         <div style='background:red;padding:20px;border-radius:10px;text-align:center'>
         <h1>⛔ AUTO STOP AKTIF</h1>
         <h3>Mesin dimatikan otomatis oleh PLC</h3>
         </div>
         """, unsafe_allow_html=True)
+
     else:
         st.markdown("""
         <div style='background:red;padding:20px;border-radius:10px;text-align:center;
@@ -111,6 +129,22 @@ elif status.lower() == "warning":
     </div>
     """, unsafe_allow_html=True)
 
+elif status.lower() == "good":
+
+    if cmd == 0:
+        st.markdown("""
+        <div style='background:gray;padding:20px;border-radius:10px;text-align:center'>
+        <h1>⚪ MESIN OFF</h1>
+        <h3>Mesin dimatikan manual</h3>
+        </div>
+        """, unsafe_allow_html=True)
+
+    else:
+        st.markdown("""
+        <div style='background:green;padding:20px;border-radius:10px;text-align:center'>
+        <h1>🟢 RUNNING NORMAL</h1>
+        </div>
+        """, unsafe_allow_html=True)
 # ======================
 # KPI + GAUGE
 # ======================
@@ -151,18 +185,35 @@ with col2:
 
         with col_btn1:
             if st.button("🛑 MATIKAN MESIN", use_container_width=True):
-                try:
-                    supabase.table("control").update({"D310": 0}).eq("id", 1).execute()
-                    st.success("Perintah STOP dikirim!")
-                except Exception as e:
-                    st.error(f"Gagal: {e}")
+
+                if time.time() - st.session_state.last_click > 2:
+
+                    st.session_state.last_click = time.time()
+
+                    try:
+                        supabase.table("control").update({"D310": 0}).eq("id", 1).execute()
+                        st.success("Perintah STOP dikirim!")
+                    except Exception as e:
+                        st.error(f"Gagal: {e}")
+
+                else:
+                    st.warning("Tunggu 2 detik sebelum klik lagi")
+
         with col_btn2:
             if st.button("▶️ HIDUPKAN MESIN", use_container_width=True):
-                try:
-                    supabase.table("control").update({"D310": 1}).eq("id", 1).execute()
-                    st.success("Perintah RUN Dikirim!")
-                except Exception as e:
-                    st.error(f"Gagal: {e}")
+
+                if time.time() - st.session_state.last_click > 2:
+
+                    st.session_state.last_click = time.time()
+
+                    try:
+                        supabase.table("control").update({"D310": 1}).eq("id", 1).execute()
+                        st.success("Perintah RUN dikirim!")
+                    except Exception as e:
+                        st.error(f"Gagal: {e}")
+
+                else:
+                    st.warning("Tunggu 2 detik sebelum klik lagi")
 st.divider()
 
 # ======================
