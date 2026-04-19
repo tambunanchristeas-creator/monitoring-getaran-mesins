@@ -128,7 +128,7 @@ if status.lower() == "danger":
 elif status.lower() == "warning":
     st.markdown("""
     <div style='background:orange;padding:20px;border-radius:10px;text-align:center'>
-    <h1>⚠ WARNING - PERLU PENGECEKAN ⚠</h1>
+    <h1>⚠ WARNING - PERLU PE</h1>
     </div>
     """, unsafe_allow_html=True)
 
