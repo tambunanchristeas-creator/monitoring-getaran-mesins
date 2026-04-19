@@ -87,20 +87,27 @@ st.markdown("""
 # ALARM PANEL
 # ======================
 if status.lower() == "danger":
-    st.markdown("""
-    <div style='background:red;padding:20px;border-radius:10px;text-align:center;
-    animation: blink 1s infinite'>
-    <h1>🚨 DANGER - GETARAN TINGGI 🚨</h1>
-    </div>
-    <style>
-    @keyframes blink {50% {opacity:0.4;}}
-    </style>
-    """, unsafe_allow_html=True)
+
+    if rpm < 50:
+        st.markdown("""
+        <div style='background:red;padding:20px;border-radius:10px;text-align:center'>
+        <h1>⛔ AUTO STOP AKTIF</h1>
+        <h3>Mesin dimatikan otomatis oleh PLC</h3>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <div style='background:red;padding:20px;border-radius:10px;text-align:center;
+        animation: blink 1s infinite'>
+        <h1>🚨 DANGER</h1>
+        <h3>Mesin sedang dihentikan otomatis...</h3>
+        </div>
+        """, unsafe_allow_html=True)
 
 elif status.lower() == "warning":
     st.markdown("""
     <div style='background:orange;padding:20px;border-radius:10px;text-align:center'>
-    <h1>⚠ WARNING - PERLU PENGECEKAN</h1>
+    <h1>⚠ WARNING</h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -145,14 +152,14 @@ with col2:
         with col_btn1:
             if st.button("🛑 MATIKAN MESIN", use_container_width=True):
                 try:
-                    supabase.table("control").insert({"D310": int(1)}).execute()
+                    supabase.table("control").update({"D310": 0}).eq("id", 1).execute()
                     st.success("Perintah STOP dikirim!")
                 except Exception as e:
                     st.error(f"Gagal: {e}")
         with col_btn2:
             if st.button("▶️ HIDUPKAN MESIN", use_container_width=True):
                 try:
-                    supabase.table("control").insert({"D310": int(0)}).execute()
+                    supabase.table("control").update({"D310": 1}).eq("id", 1).execute()
                     st.success("Perintah RUN Dikirim!")
                 except Exception as e:
                     st.error(f"Gagal: {e}")
