@@ -61,7 +61,7 @@ if "last_click" not in st.session_state:
 def load_data():
     res = supabase.table("monitoring")\
         .select("*")\
-        .order("recorded_at", desc=True)\
+        .order("TIME", desc=True)\
         .limit(100)\
         .execute()
     return pd.DataFrame(res.data)
@@ -75,7 +75,7 @@ if df.empty:
 # ======================
 # FORMAT DATA
 # ======================
-df["recorded_at"] = pd.to_datetime(df["recorded_at"])
+df["TIME"] = pd.to_datetime(df["TIME"])
 df["RPM"] = df["RPM"].astype(int)
 df["Vrms"] = df["Vrms"].astype(float).round(2)
 
@@ -224,15 +224,15 @@ st.divider()
 # ======================
 colg1, colg2 = st.columns(2)
 
-df_plot = df.sort_values("recorded_at").tail(50)
+df_plot = df.sort_values("TIME").tail(50)
 
 with colg1:
-    fig_rpm = px.line(df_plot, x="recorded_at", y="RPM")
+    fig_rpm = px.line(df_plot, x="TIME", y="RPM")
     fig_rpm.update_layout(title="Grafik RPM")
     st.plotly_chart(fig_rpm, use_container_width=True)
 
 with colg2:
-    fig_vib = px.line(df_plot, x="recorded_at", y="Vrms")
+    fig_vib = px.line(df_plot, x="TIME", y="Vrms")
     fig_vib.add_hline(y=4, line_dash="dash", line_color="yellow")
     fig_vib.add_hline(y=7, line_dash="dash", line_color="red")
     fig_vib.update_layout(title="Grafik Getaran")
@@ -243,4 +243,4 @@ st.divider()
 # ======================
 # TABEL
 # ======================
-st.dataframe(df.sort_values("recorded_at", ascending=False), use_container_width=True)
+st.dataframe(df.sort_values("TIME", ascending=False), use_container_width=True)
