@@ -694,14 +694,13 @@ else:
         # =================================================
         # FREKUENSI DOMINAN
         # =================================================
-
-        # Abaikan 0 Hz
         if len(amplitude) > 1:
 
+            # Abaikan DC / 0 Hz
             dominant_index = (
                 np.argmax(
                     amplitude[1:]
-                ) + 1
+            ) + 1
             )
 
             dominant_frequency = (
@@ -715,15 +714,96 @@ else:
         else:
 
             dominant_frequency = 0
-
             dominant_amplitude = 0
 
         # =================================================
-        # FREKUENSI 1X RPM
+        # FREKUENSI 1X, 2X, 3X RPM
         # =================================================
 
         rpm_frequency = rpm / 60.0
 
+        one_x_frequency = rpm_frequency
+        two_x_frequency = rpm_frequency * 2
+        three_x_frequency = rpm_frequency * 3
+
+        # =================================================
+        # FUNGSI MENCARI AMPLITUDE DI SEKITAR FREKUENSI
+        # =================================================
+
+        def get_harmonic_amplitude(
+            target_frequency,
+            frequency,
+            amplitude,
+            bandwidth=1.0
+        ):
+
+            if target_frequency <= 0:
+                return 0.0, 0.0
+
+            # Cari semua titik FFT di sekitar
+            # target frequency ± bandwidth
+
+            mask = (
+                np.abs(
+                    frequency - target_frequency
+                )
+                <= bandwidth
+            )
+
+            if not np.any(mask):
+                return 0.0, 0.0
+
+            local_indices = np.where(mask)[0]
+
+            # Cari peak terbesar di sekitar
+            local_index = (
+                local_indices[
+                    np.argmax(
+                        amplitude[local_indices]
+                    )
+                ]
+            )
+
+            return (
+                frequency[local_index],
+                amplitude[local_index]
+            )
+
+        # =================================================
+        # AMPLITUDE 1X
+        # =================================================
+
+        one_x_actual_frequency, one_x_amplitude = (
+            get_harmonic_amplitude(
+                one_x_frequency,
+                frequency,
+                amplitude
+            )
+        )
+
+        # =================================================
+        # AMPLITUDE 2X
+        # =================================================
+
+        two_x_actual_frequency, two_x_amplitude = (
+            get_harmonic_amplitude(
+                two_x_frequency,
+                frequency,
+                amplitude
+            )
+        )
+
+        # =================================================
+        # AMPLITUDE 3X
+        # =================================================
+
+        three_x_actual_frequency, three_x_amplitude = (
+            get_harmonic_amplitude(
+                three_x_frequency,
+                frequency,
+                amplitude
+            )
+        )
         # =================================================
         # KPI FFT
         # =================================================
@@ -742,22 +822,52 @@ else:
             st.metric(
                 "Sampling",
                 f"{sampling_frequency:.0f} Hz"
-            )
+                )
 
         with c3:
 
             st.metric(
-                "Frekuensi Dominan",
-                f"{dominant_frequency:.2f} Hz"
-            )
+            "Frekuensi Dominan",
+            f"{dominant_frequency:.2f} Hz"
+        )
 
         with c4:
 
             st.metric(
+            "RPM",
+            f"{rpm:.0f}"
+        )
+
+
+        # =================================================
+        # HARMONIK RPM
+        # =================================================
+
+        h1, h2, h3 = st.columns(3)
+
+        with h1:
+
+            st.metric(
                 "1× RPM",
-                f"{rpm_frequency:.2f} Hz"
+                f"{one_x_frequency:.2f} Hz",
+                f"Amp = {one_x_amplitude:.2f}"
             )
 
+        with h2:
+
+            st.metric(
+                "2× RPM",
+                f"{two_x_frequency:.2f} Hz",
+                f"Amp = {two_x_amplitude:.2f}"
+            )
+
+        with h3:
+
+            st.metric(
+                "3× RPM",
+                f"{three_x_frequency:.2f} Hz",
+                f"Amp = {three_x_amplitude:.2f}"
+            )
         # =================================================
         # GRAFIK FFT
         # =================================================
@@ -808,25 +918,49 @@ else:
         # Garis 1x RPM
         # -------------------------------------------------
 
-        if rpm_frequency > 0:
+        if one_x_frequency > 0:
 
             fig_fft.add_vline(
-
-                x=rpm_frequency,
-
+                x=one_x_frequency,
                 line_dash="dash",
-
                 line_color="yellow",
-
                 annotation_text=(
-                    f"1× RPM = "
-                    f"{rpm_frequency:.2f} Hz"
+                    f"1× = {one_x_frequency:.2f} Hz"
                 ),
-
                 annotation_position="top"
-
             )
 
+            # -------------------------------------------------
+            # Garis 2× RPM
+            # -------------------------------------------------
+
+            if two_x_frequency > 0 and two_x_frequency <= nyquist:
+
+                fig_fft.add_vline(
+                    x=two_x_frequency,
+                    line_dash="dash",
+                    line_color="orange",
+                    annotation_text=(
+                        f"2× = {two_x_frequency:.2f} Hz"
+                    ),
+                    annotation_position="top"
+                )
+
+            # -------------------------------------------------
+            # Garis 3× RPM
+            # -------------------------------------------------
+
+            if three_x_frequency > 0 and three_x_frequency <= nyquist:
+
+                fig_fft.add_vline(
+                    x=three_x_frequency,
+                    line_dash="dash",
+                    line_color="red",
+                    annotation_text=(
+                        f"3× = {three_x_frequency:.2f} Hz"
+                    ),
+                    annotation_position="top"
+                )
         # -------------------------------------------------
         # Tandai frekuensi dominan
         # -------------------------------------------------
