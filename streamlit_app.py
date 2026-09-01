@@ -3,6 +3,7 @@ from supabase import create_client
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 import time
 from streamlit_autorefresh import st_autorefresh
 
@@ -96,12 +97,50 @@ def load_data():
 
         return pd.DataFrame()
 
+# =========================================================
+# LOAD DATA FFT
+# =========================================================
+def load_fft_data():
+
+    try:
+
+        res = (
+            supabase
+            .table("FFT")
+            .select(
+                "id,created_at,sample_count,sampling_frequency,data"
+            )
+            .order(
+                "id",
+                desc=True
+            )
+            .limit(1)
+            .execute()
+        )
+
+        if not res.data:
+            return None
+
+        return res.data[0]
+
+    except Exception as e:
+
+        st.error("Gagal mengambil data FFT dari Supabase.")
+
+        st.code(str(e))
+
+        return None
+
 
 # =========================================================
 # AMBIL DATA
 # =========================================================
 df = load_data()
 
+# =========================================================
+# AMBIL FFT TERBARU
+# =========================================================
+fft_latest = load_fft_data()
 
 # =========================================================
 # CEK DATA
@@ -112,6 +151,73 @@ if df.empty:
 
     st.stop()
 
+# =========================================================
+# HITUNG FFT
+# =========================================================
+def calculate_fft(data, sampling_frequency):
+
+    # -----------------------------------------------------
+    # Konversi ke numpy
+    # -----------------------------------------------------
+
+    signal = np.array(
+        data,
+        dtype=float
+    )
+
+    # -----------------------------------------------------
+    # Pastikan data cukup
+    # -----------------------------------------------------
+
+    if len(signal) < 2:
+        return None, None
+
+    # -----------------------------------------------------
+    # Hilangkan DC / nilai rata-rata
+    # -----------------------------------------------------
+
+    signal = signal - np.mean(signal)
+
+    # -----------------------------------------------------
+    # Hanning window
+    # -----------------------------------------------------
+
+    window = np.hanning(len(signal))
+
+    signal_windowed = signal * window
+
+    # -----------------------------------------------------
+    # FFT real signal
+    # -----------------------------------------------------
+
+    fft_result = np.fft.rfft(
+        signal_windowed
+    )
+
+    # -----------------------------------------------------
+    # Frekuensi
+    # -----------------------------------------------------
+
+    frequency = np.fft.rfftfreq(
+        len(signal),
+        d=1 / sampling_frequency
+    )
+
+    # -----------------------------------------------------
+    # Magnitude
+    # -----------------------------------------------------
+
+    amplitude = (
+        2.0 / np.sum(window)
+    ) * np.abs(fft_result)
+
+    # DC jangan dikalikan 2
+    amplitude[0] = (
+        np.abs(fft_result[0])
+        / np.sum(window)
+    )
+
+    return frequency, amplitude
 
 # =========================================================
 # FORMAT DATA
@@ -513,7 +619,346 @@ with col2:
 
 st.divider()
 
+# =========================================================
+# FFT ANALYSIS
+# =========================================================
 
+st.header("📊 Analisis FFT Getaran")
+
+if fft_latest is None:
+
+    st.warning(
+        "Belum ada data FFT dari PLC."
+    )
+
+else:
+
+    # =====================================================
+    # METADATA FFT
+    # =====================================================
+
+    fft_id = fft_latest["id"]
+
+    fft_time = fft_latest["created_at"]
+
+    sample_count = int(
+        fft_latest["sample_count"]
+    )
+
+    sampling_frequency = float(
+        fft_latest["sampling_frequency"]
+    )
+
+    fft_data = fft_latest["data"]
+
+    # -----------------------------------------------------
+    # Pastikan data berupa list
+    # -----------------------------------------------------
+
+    if isinstance(fft_data, str):
+
+        import json
+
+        fft_data = json.loads(
+            fft_data
+        )
+
+    fft_data = np.array(
+        fft_data,
+        dtype=float
+    )
+
+    # =====================================================
+    # VALIDASI
+    # =====================================================
+
+    if len(fft_data) != sample_count:
+
+        st.error(
+            f"Jumlah data FFT tidak sesuai. "
+            f"Expected: {sample_count}, "
+            f"Received: {len(fft_data)}"
+        )
+
+    else:
+
+        # =================================================
+        # HITUNG FFT
+        # =================================================
+
+        frequency, amplitude = calculate_fft(
+            fft_data,
+            sampling_frequency
+        )
+
+        # =================================================
+        # FREKUENSI DOMINAN
+        # =================================================
+
+        # Abaikan 0 Hz
+        if len(amplitude) > 1:
+
+            dominant_index = (
+                np.argmax(
+                    amplitude[1:]
+                ) + 1
+            )
+
+            dominant_frequency = (
+                frequency[dominant_index]
+            )
+
+            dominant_amplitude = (
+                amplitude[dominant_index]
+            )
+
+        else:
+
+            dominant_frequency = 0
+
+            dominant_amplitude = 0
+
+        # =================================================
+        # FREKUENSI 1X RPM
+        # =================================================
+
+        rpm_frequency = rpm / 60.0
+
+        # =================================================
+        # KPI FFT
+        # =================================================
+
+        c1, c2, c3, c4 = st.columns(4)
+
+        with c1:
+
+            st.metric(
+                "Jumlah Sampel",
+                sample_count
+            )
+
+        with c2:
+
+            st.metric(
+                "Sampling",
+                f"{sampling_frequency:.0f} Hz"
+            )
+
+        with c3:
+
+            st.metric(
+                "Frekuensi Dominan",
+                f"{dominant_frequency:.2f} Hz"
+            )
+
+        with c4:
+
+            st.metric(
+                "1× RPM",
+                f"{rpm_frequency:.2f} Hz"
+            )
+
+        # =================================================
+        # GRAFIK FFT
+        # =================================================
+
+        df_fft = pd.DataFrame({
+
+            "Frequency": frequency,
+
+            "Amplitude": amplitude
+
+        })
+
+        # -------------------------------------------------
+        # Batasi sampai Nyquist
+        # -------------------------------------------------
+
+        nyquist = (
+            sampling_frequency / 2
+        )
+
+        df_fft = df_fft[
+            df_fft["Frequency"] <= nyquist
+        ]
+
+        # -------------------------------------------------
+        # Grafik
+        # -------------------------------------------------
+
+        fig_fft = go.Figure()
+
+        fig_fft.add_trace(
+
+            go.Scatter(
+
+                x=df_fft["Frequency"],
+
+                y=df_fft["Amplitude"],
+
+                mode="lines",
+
+                name="FFT"
+
+            )
+
+        )
+
+        # -------------------------------------------------
+        # Garis 1x RPM
+        # -------------------------------------------------
+
+        if rpm_frequency > 0:
+
+            fig_fft.add_vline(
+
+                x=rpm_frequency,
+
+                line_dash="dash",
+
+                line_color="yellow",
+
+                annotation_text=(
+                    f"1× RPM = "
+                    f"{rpm_frequency:.2f} Hz"
+                ),
+
+                annotation_position="top"
+
+            )
+
+        # -------------------------------------------------
+        # Tandai frekuensi dominan
+        # -------------------------------------------------
+
+        fig_fft.add_trace(
+
+            go.Scatter(
+
+                x=[
+                    dominant_frequency
+                ],
+
+                y=[
+                    dominant_amplitude
+                ],
+
+                mode="markers",
+
+                marker={
+                    "size": 12
+                },
+
+                name="Dominant Frequency"
+
+            )
+
+        )
+
+        fig_fft.update_layout(
+
+            title=(
+                "Frequency Spectrum "
+                "(FFT)"
+            ),
+
+            xaxis_title=(
+                "Frequency (Hz)"
+            ),
+
+            yaxis_title=(
+                "Amplitude"
+            ),
+
+            xaxis=dict(
+                range=[
+                    0,
+                    nyquist
+                ]
+            ),
+
+            hovermode="x unified"
+
+        )
+
+        st.plotly_chart(
+
+            fig_fft,
+
+            use_container_width=True
+
+        )
+
+        # =================================================
+        # RAW SIGNAL
+        # =================================================
+
+        st.subheader(
+            "Raw Signal D200–D699"
+        )
+
+        waktu = (
+            np.arange(
+                len(fft_data)
+            )
+            / sampling_frequency
+        )
+
+        df_raw_fft = pd.DataFrame({
+
+            "Time": waktu,
+
+            "ADC": fft_data
+
+        })
+
+        fig_raw = px.line(
+
+            df_raw_fft,
+
+            x="Time",
+
+            y="ADC",
+
+            title=(
+                "500 Sampel Data Getaran "
+                "D200–D699"
+            )
+
+        )
+
+        fig_raw.update_layout(
+
+            xaxis_title=(
+                "Time (s)"
+            ),
+
+            yaxis_title=(
+                "ADC"
+            )
+
+        )
+
+        st.plotly_chart(
+
+            fig_raw,
+
+            use_container_width=True
+
+        )
+
+        # =================================================
+        # INFO
+        # =================================================
+
+        st.caption(
+
+            f"FFT ID: {fft_id} | "
+            f"Data diterima: {fft_time} | "
+            f"Resolusi frekuensi: "
+            f"{sampling_frequency / sample_count:.2f} Hz"
+
+        )
 # =========================================================
 # DATA UNTUK GRAFIK
 # =========================================================
