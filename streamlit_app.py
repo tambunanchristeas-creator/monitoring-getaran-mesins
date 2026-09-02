@@ -488,7 +488,7 @@ with col2:
         border-radius:10px;
         text-align:center'>
 
-        <h2>Getaran (Vrms)</h2>
+        <h2>Getaran (Acceleration RMS)</h2>
 
         <h1>
         {vibration:.2f} mm/s²
