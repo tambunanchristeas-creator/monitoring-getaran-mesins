@@ -1255,7 +1255,7 @@ with colg2:
     fig_vib.update_layout(
         title="Grafik Getaran",
         xaxis_title="Waktu",
-        yaxis_title="AccRMS (mm/s^2)"
+        yaxis_title="AccRMS (mm/s²)"
     )
 
     st.plotly_chart(
