@@ -1148,7 +1148,7 @@ else:
 
             x="Time",
 
-            y="Acceletation",
+            y="Acceleration",
 
             title=(
                 "500 Sampel Data Getaran "
