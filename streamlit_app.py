@@ -491,7 +491,7 @@ with col2:
         <h2>Getaran (Vrms)</h2>
 
         <h1>
-        {vibration:.2f} mm/s
+        {vibration:.2f} mm/s²
         </h1>
 
         <h2>
