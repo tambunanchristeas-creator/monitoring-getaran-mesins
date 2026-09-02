@@ -669,6 +669,13 @@ else:
     )
 
     # =====================================================
+    # KONVERSI D110 → PERCEPATAN
+    # =====================================================
+
+    # D110 × 12.387 = mm/s²
+    fft_data_acc = fft_data * 12.387
+
+    # =====================================================
     # VALIDASI
     # =====================================================
 
@@ -687,8 +694,86 @@ else:
         # =================================================
 
         frequency, amplitude = calculate_fft(
-            fft_data,
+            fft_data_acc,
             sampling_frequency
+        )
+
+        # =====================================================
+        # MARKER PEAK 1×
+        # =====================================================
+
+        fig_fft.add_trace(
+
+            go.Scatter(
+
+                x=[one_x_actual_frequency],
+
+                y=[one_x_amplitude],
+
+                mode="markers",
+
+                marker={
+                    "size": 10
+                },
+
+                name="Peak 1×"
+
+            )
+
+        )
+
+
+        # =====================================================
+        # MARKER PEAK 2×
+        # =====================================================
+
+        if two_x_frequency <= nyquist:
+
+            fig_fft.add_trace(
+
+                go.Scatter(
+
+                x=[two_x_actual_frequency],
+
+                y=[two_x_amplitude],
+
+                mode="markers",
+
+                marker={
+                    "size": 10
+                },
+
+                name="Peak 2×"
+
+            )
+
+        )
+
+
+        # =====================================================
+        # MARKER PEAK 3×
+        # =====================================================
+
+        if three_x_frequency <= nyquist:
+
+            fig_fft.add_trace(
+
+                go.Scatter(
+
+                x=[three_x_actual_frequency],
+
+                y=[three_x_amplitude],
+
+                mode="markers",
+
+                marker={
+                    "size": 10
+                },
+
+                name="Peak 3×"
+
+            )
+
         )
 
         # =================================================
@@ -827,8 +912,8 @@ else:
         with c3:
 
             st.metric(
-            "Frekuensi Dominan",
-            f"{dominant_frequency:.2f} Hz"
+            "Resolusi FFT",
+            f"{dominant_frequency / sample_count:.2f} Hz"
         )
 
         with c4:
@@ -850,6 +935,7 @@ else:
             st.metric(
                 "1× RPM",
                 f"{one_x_frequency:.2f} Hz",
+                f"Peak = {one_x_actual_frequency:.2f}Hz | "
                 f"Amp = {one_x_amplitude:.2f}"
             )
 
@@ -858,6 +944,7 @@ else:
             st.metric(
                 "2× RPM",
                 f"{two_x_frequency:.2f} Hz",
+                f"Peak = {two_x_actual_frequency:.2f}Hz | "
                 f"Amp = {two_x_amplitude:.2f}"
             )
 
@@ -866,6 +953,7 @@ else:
             st.metric(
                 "3× RPM",
                 f"{three_x_frequency:.2f} Hz",
+                f"Peak = {three_x_actual_frequency:.2f}Hz | "
                 f"Amp = {three_x_amplitude:.2f}"
             )
         # =================================================
@@ -876,7 +964,7 @@ else:
 
             "Frequency": frequency,
 
-            "Amplitude": amplitude
+            "Acceleration": amplitude
 
         })
 
@@ -904,11 +992,11 @@ else:
 
                 x=df_fft["Frequency"],
 
-                y=df_fft["Amplitude"],
+                y=df_fft["Acceleration"],
 
                 mode="lines",
 
-                name="FFT"
+                name="Acceleration FFT"
 
             )
 
@@ -1001,7 +1089,7 @@ else:
             ),
 
             yaxis_title=(
-                "Amplitude"
+                "Acceleration Amplitude (mm/s²)"
             ),
 
             xaxis=dict(
@@ -1042,7 +1130,9 @@ else:
 
             "Time": waktu,
 
-            "ADC": fft_data
+            "D110": fft_data,
+
+            "Acceleration": fft_data_acc
 
         })
 
@@ -1052,11 +1142,10 @@ else:
 
             x="Time",
 
-            y="ADC",
+            y="Acceletation",
 
             title=(
                 "500 Sampel Data Getaran "
-                "D200–D699"
             )
 
         )
@@ -1068,7 +1157,7 @@ else:
             ),
 
             yaxis_title=(
-                "ADC"
+                "Acceleration (mm/s²)"
             )
 
         )
