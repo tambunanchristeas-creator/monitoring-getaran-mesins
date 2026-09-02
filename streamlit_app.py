@@ -81,7 +81,7 @@ def load_data():
         res = (
             supabase
             .table("monitoring")
-            .select("id,TIME,RPM,Vrms,STATUS")
+            .select("id,TIME,RPM,AccRMS,STATUS")
             .order("id", desc=True)
             .limit(100)
             .execute()
@@ -237,9 +237,9 @@ df["RPM"] = pd.to_numeric(
 ).fillna(0)
 
 
-# VRMS
-df["Vrms"] = pd.to_numeric(
-    df["Vrms"],
+# ARMS
+df["AccRMS"] = pd.to_numeric(
+    df["AccRMS"],
     errors="coerce"
 ).fillna(0)
 
@@ -268,10 +268,9 @@ latest = df.iloc[0]
 
 rpm = float(latest["RPM"])
 
-vibration = float(latest["Vrms"])
+vibration = float(latest["AccRMS"])
 
 status = latest["STATUS"]
-
 
 # =========================================================
 # AMBIL DATA CONTROL D310
@@ -477,7 +476,7 @@ with col1:
 
 
 # =========================================================
-# VRMS
+# Acc RMS
 # =========================================================
 with col2:
 
@@ -1237,7 +1236,7 @@ with colg2:
     fig_vib = px.line(
         df_plot,
         x="TIME",
-        y="Vrms",
+        y="AccRMS",
         markers=True
     )
 
@@ -1256,7 +1255,7 @@ with colg2:
     fig_vib.update_layout(
         title="Grafik Getaran",
         xaxis_title="Waktu",
-        yaxis_title="Vrms (mm/s)"
+        yaxis_title="AccRMS (mm/s^2)"
     )
 
     st.plotly_chart(
