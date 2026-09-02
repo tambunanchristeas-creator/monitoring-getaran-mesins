@@ -701,84 +701,6 @@ else:
         # BUAT FIGURE FFT
         fig_fft = go.Figure()
 
-        # =====================================================
-        # MARKER PEAK 1×
-        # =====================================================
-
-        fig_fft.add_trace(
-
-            go.Scatter(
-
-                x=[one_x_actual_frequency],
-
-                y=[one_x_amplitude],
-
-                mode="markers",
-
-                marker={
-                    "size": 10
-                },
-
-                name="Peak 1×"
-
-            )
-
-        )
-
-
-        # =====================================================
-        # MARKER PEAK 2×
-        # =====================================================
-
-        if two_x_frequency <= nyquist:
-
-            fig_fft.add_trace(
-
-                go.Scatter(
-
-                x=[two_x_actual_frequency],
-
-                y=[two_x_amplitude],
-
-                mode="markers",
-
-                marker={
-                    "size": 10
-                },
-
-                name="Peak 2×"
-
-            )
-
-        )
-
-
-        # =====================================================
-        # MARKER PEAK 3×
-        # =====================================================
-
-        if three_x_frequency <= nyquist:
-
-            fig_fft.add_trace(
-
-                go.Scatter(
-
-                x=[three_x_actual_frequency],
-
-                y=[three_x_amplitude],
-
-                mode="markers",
-
-                marker={
-                    "size": 10
-                },
-
-                name="Peak 3×"
-
-            )
-
-        )
-
         # =================================================
         # FREKUENSI DOMINAN
         # =================================================
@@ -815,7 +737,7 @@ else:
         three_x_frequency = rpm_frequency * 3
 
         # =================================================
-        # FUNGSI MENCARI AMPLITUDE DI SEKITAR FREKUENSI
+        # FUNGSI MENCARI PEAK
         # =================================================
 
         def get_harmonic_amplitude(
@@ -858,7 +780,7 @@ else:
             )
 
         # =================================================
-        # AMPLITUDE 1X
+        # PEAK 1X
         # =================================================
 
         one_x_actual_frequency, one_x_amplitude = (
@@ -870,7 +792,7 @@ else:
         )
 
         # =================================================
-        # AMPLITUDE 2X
+        # PEAK 2X
         # =================================================
 
         two_x_actual_frequency, two_x_amplitude = (
@@ -882,7 +804,7 @@ else:
         )
 
         # =================================================
-        # AMPLITUDE 3X
+        # PEAK 3X
         # =================================================
 
         three_x_actual_frequency, three_x_amplitude = (
@@ -916,7 +838,7 @@ else:
 
             st.metric(
             "Resolusi FFT",
-            f"{dominant_frequency / sample_count:.2f} Hz"
+            f"{sampling_frequency / sample_count:.2f} Hz"
         )
 
         with c4:
@@ -970,7 +892,7 @@ else:
             "Acceleration": amplitude
 
         })
-
+        
         # -------------------------------------------------
         # Batasi sampai Nyquist
         # -------------------------------------------------
@@ -1009,49 +931,130 @@ else:
         # Garis 1x RPM
         # -------------------------------------------------
 
-        if one_x_frequency > 0:
+        if ( 
+            one_x_frequency > 0
+            and one_x_frequency <= nyquist
+        ):
 
-            fig_fft.add_vline(
-                x=one_x_frequency,
-                line_dash="dash",
-                line_color="yellow",
-                annotation_text=(
-                    f"1× = {one_x_frequency:.2f} Hz"
-                ),
-                annotation_position="top"
+            fig_fft.add_trace(
+                go.Scatter(
+                x=[one_x_actual_frequency],
+                y=[one_x_amplitude],
+                mode="markers",
+                marker={
+                    "size": 12
+                },
+                name="peak 1x"
+                )
             )
-
             # -------------------------------------------------
             # Garis 2× RPM
             # -------------------------------------------------
 
-            if two_x_frequency > 0 and two_x_frequency <= nyquist:
-
-                fig_fft.add_vline(
-                    x=two_x_frequency,
-                    line_dash="dash",
-                    line_color="orange",
-                    annotation_text=(
-                        f"2× = {two_x_frequency:.2f} Hz"
-                    ),
-                    annotation_position="top"
+            if(
+                two_x_frequency > 0 
+                and two_x_frequency <= nyquist
+            ):
+                fig_fft.add_trace(
+                    go.Scatter(
+                        x=[two_x_actual_frequency],
+                        y=[two_x_amplitude],
+                        mode="markers",
+                        marker={
+                            "size": 12
+                        },
+                        name="Peak 2x"
+                    )
                 )
-
             # -------------------------------------------------
             # Garis 3× RPM
             # -------------------------------------------------
 
-            if three_x_frequency > 0 and three_x_frequency <= nyquist:
+            if (
+                three_x_frequency > 0 
+                and three_x_frequency <= nyquist
+            ):
+                fig_fft.add_trace(
+                    go.Scatter(
+                        x=[three_x_actual_frequency],
+                        y=[three_x_amplitude],
+                        mode="markers",
+                        marker={
+                            "size": 12
+                        },
+                        name="Peak 3x"
+                    )
+                )
+
+            # =================================================
+            # GARIS 1X RPM
+            # =================================================
+
+            if one_x_frequency > 0:
 
                 fig_fft.add_vline(
-                    x=three_x_frequency,
+
+                    x=one_x_frequency,
+
                     line_dash="dash",
-                    line_color="red",
+
+                    annotation_text=(
+                        f"1× = {one_x_frequency:.2f} Hz"
+                    ),
+
+                    annotation_position="top"
+
+                )
+
+
+            # =================================================
+            # GARIS 2X RPM
+            # =================================================
+
+            if (
+                two_x_frequency > 0
+                and two_x_frequency <= nyquist
+            ):
+
+                fig_fft.add_vline(
+
+                x=two_x_frequency,
+
+                line_dash="dash",
+
+                annotation_text=(
+                    f"2× = {two_x_frequency:.2f} Hz"
+                ),
+
+                annotation_position="top"
+
+        )
+
+
+            # =================================================
+            # GARIS 3X RPM
+            # =================================================
+
+            if (
+                three_x_frequency > 0
+                and three_x_frequency <= nyquist
+            ):
+
+                fig_fft.add_vline(
+
+                    x=three_x_frequency,
+
+                    line_dash="dash",
+
                     annotation_text=(
                         f"3× = {three_x_frequency:.2f} Hz"
-                    ),
-                    annotation_position="top"
-                )
+                ),
+
+                annotation_position="top"
+
+            )             
+
+    
         # -------------------------------------------------
         # Tandai frekuensi dominan
         # -------------------------------------------------
