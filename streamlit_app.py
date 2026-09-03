@@ -268,7 +268,7 @@ latest = df.iloc[0]
 
 rpm = float(latest["RPM"])
 
-vibration = float(latest["AccRMS"])
+acceleration_rms = float(latest["AccRMS"])
 
 status = latest["STATUS"]
 
@@ -490,7 +490,7 @@ with col2:
         <h2>Getaran (Velocity RMS)</h2>
 
         <h1>
-        {velocity_rms_mms:.2f} mm/s²
+        {velocity_rms:.2f} mm/s²
         </h1>
 
         <h2>
@@ -809,7 +809,7 @@ else:
         if one_x_actual_frequency > 0:
 
             velocity_rms_mms = (
-                vibration
+                acceleration_rms
                 / (2 * np.pi * one_x_actual_frequency)
             )
 
