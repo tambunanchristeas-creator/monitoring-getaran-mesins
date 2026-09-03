@@ -1284,7 +1284,7 @@ else:
 
             "D110": fft_data,
 
-            "Acceleration": fft_data_acc
+            "Amplitudo": fft_data_acc
 
         })
 
@@ -1294,7 +1294,7 @@ else:
 
             x="Time",
 
-            y="Acceleration",
+            y="Amplitudo",
 
             title=(
                 "500 Sampel Data Getaran "
@@ -1309,7 +1309,7 @@ else:
             ),
 
             yaxis_title=(
-                "Acceleration (mm/s²)"
+                "Amplitudo (mm/s²)"
             )
 
         )
