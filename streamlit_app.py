@@ -490,7 +490,7 @@ with col2:
         <h2>Getaran (Velocity RMS)</h2>
 
         <h1>
-        {vibration:.2f} mm/s²
+        {velocity_rms_mms:.2f} mm/s²
         </h1>
 
         <h2>
