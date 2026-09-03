@@ -476,7 +476,7 @@ with col1:
 
 
 # =========================================================
-# Acc RMS
+# Velocity RMS
 # =========================================================
 with col2:
 
@@ -487,7 +487,7 @@ with col2:
         border-radius:10px;
         text-align:center'>
 
-        <h2>Getaran (Acceleration RMS)</h2>
+        <h2>Getaran (Velocity RMS)</h2>
 
         <h1>
         {vibration:.2f} mm/s²
@@ -801,6 +801,21 @@ else:
                 amplitude
             )
         )
+
+        # =====================================================
+        # HITUNG VELOCITY RMS DARI ACCELERATION RMS
+        # =====================================================
+
+        if one_x_actual_frequency > 0:
+
+            velocity_rms_mms = (
+                vibration
+                / (2 * np.pi * one_x_actual_frequency)
+            )
+
+        else:
+
+            velocity_rms_mms = 0.0
 
         # =================================================
         # PEAK 3X
