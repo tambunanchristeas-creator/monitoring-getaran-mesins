@@ -1007,7 +1007,7 @@ else:
                 "1× RPM",
                 f"{one_x_frequency:.2f} Hz",
                 f"Peak = {one_x_actual_frequency:.2f}Hz | "
-                f"Amp = {one_x_amplitude:.2f}"
+                f"Amp = {one_x_amplitude:.2f} mm/s²"
             )
 
         with h2:
@@ -1016,7 +1016,7 @@ else:
                 "2× RPM",
                 f"{two_x_frequency:.2f} Hz",
                 f"Peak = {two_x_actual_frequency:.2f}Hz | "
-                f"Amp = {two_x_amplitude:.2f}"
+                f"Amp = {two_x_amplitude:.2f} mm/s²"
             )
 
         with h3:
@@ -1025,7 +1025,7 @@ else:
                 "3× RPM",
                 f"{three_x_frequency:.2f} Hz",
                 f"Peak = {three_x_actual_frequency:.2f}Hz | "
-                f"Amp = {three_x_amplitude:.2f}"
+                f"Amp = {three_x_amplitude:.2f} mm/s²"
             )
         # =================================================
         # GRAFIK FFT
@@ -1035,7 +1035,7 @@ else:
 
             "Frequency": frequency,
 
-            "Acceleration": amplitude
+            "Magnitude": amplitude
 
         })
         
@@ -1063,7 +1063,7 @@ else:
 
                 x=df_fft["Frequency"],
 
-                y=df_fft["Acceleration"],
+                y=df_fft["Magnitude"],
 
                 mode="lines",
 
@@ -1241,7 +1241,7 @@ else:
             ),
 
             yaxis_title=(
-                "Acceleration Amplitude (mm/s²)"
+                "Magnitude (mm/s²)"
             ),
 
             xaxis=dict(
@@ -1400,7 +1400,7 @@ with colg2:
     )
 
     fig_vib.update_layout(
-        title="Grafik Getaran",
+        title="Grafik Acceleration RMS",
         xaxis_title="Waktu",
         yaxis_title="AccRMS (mm/s²)"
     )
