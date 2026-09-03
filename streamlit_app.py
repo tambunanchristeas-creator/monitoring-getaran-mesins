@@ -931,7 +931,7 @@ else:
 
         one_x_actual_frequency, one_x_amplitude = (
             get_harmonic_amplitude(
-                one_x_frequency,
+                one_x_actual_frequency,
                 frequency,
                 amplitude
             )
@@ -943,7 +943,7 @@ else:
 
         two_x_actual_frequency, two_x_amplitude = (
             get_harmonic_amplitude(
-                two_x_frequency,
+                two_x_actual_frequency,
                 frequency,
                 amplitude
             )
@@ -955,7 +955,7 @@ else:
 
         three_x_actual_frequency, three_x_amplitude = (
             get_harmonic_amplitude(
-                three_x_frequency,
+                three_x_actual_frequency,
                 frequency,
                 amplitude
             )
