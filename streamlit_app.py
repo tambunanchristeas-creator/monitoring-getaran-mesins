@@ -929,37 +929,37 @@ else:
         # PEAK 1X
         # =================================================
 
-        one_x_actual_frequency = one_x_frequency
-
-        one_x_index = np.argmin(
-            np.abs(frequency - one_x_frequency)
+        one_x_actual_frequency, one_x_amplitude = (
+            get_harmonic_amplitude(
+                one_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        one_x_amplitude = amplitude[one_x_index]
 
         # =================================================
         # PEAK 2X
         # =================================================
 
-        two_x_actual_frequency = two_x_frequency
-
-        two_x_index = np.argmin(
-            np.abs(frequency - two_x_frequency)
+        two_x_actual_frequency, two_x_amplitude = (
+            get_harmonic_amplitude(
+                two_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        two_x_amplitude = amplitude[two_x_index]
 
         # =================================================
         # PEAK 3X
         # =================================================
 
-        three_x_actual_frequency = three_x_frequency
-
-        three_x_index = np.argmin(
-            np.abs(frequency - three_x_frequency)
+        three_x_actual_frequency, three_x_amplitude = (
+            get_harmonic_amplitude(
+                three_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        three_x_amplitude = amplitude[three_x_index]
         # =================================================
         # KPI FFT
         # =================================================
