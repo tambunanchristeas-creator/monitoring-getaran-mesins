@@ -475,32 +475,32 @@ with col1:
     )
 
 
-# =========================================================
-# Velocity RMS
-# =========================================================
-with col2:
+    # =========================================================
+    # Velocity RMS
+    # =========================================================
+    with col2:
 
-    st.markdown(
-        f"""
-        <div style='background:#1e293b;
-        padding:30px;
-        border-radius:10px;
-        text-align:center'>
+        st.markdown(
+            f"""
+            <div style='background:#1e293b;
+            padding:30px;
+            border-radius:10px;
+            text-align:center'>
 
-        <h2>Getaran (Velocity RMS)</h2>
+            <h2>Getaran (Velocity RMS)</h2>
 
-        <h1>
-        {velocity_rms:.2f} mm/s²
-        </h1>
+            <h1>
+            {velocity_rms:.2f} mm/s²
+            </h1>
 
-        <h2>
-        Status: {status}
-        </h2>
+            <h2>
+            Status: {status}
+            </h2>
 
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
 
     # =====================================================
@@ -790,6 +790,34 @@ else:
             )
         )
 
+        # =========================================================
+        # Velocity RMS
+        # =========================================================
+        with col2:
+
+            st.markdown(
+                f"""
+                <div style='background:#1e293b;
+                padding:30px;
+                border-radius:10px;
+                text-align:center'>
+
+                <h2>Getaran (Velocity RMS)</h2>
+
+                <h1>
+                {velocity_rms:.2f} mm/s²
+                </h1>
+
+                <h2>
+                Status: {status}
+                </h2>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+
         # =================================================
         # PEAK 2X
         # =================================================
@@ -816,6 +844,34 @@ else:
         else:
 
             velocity_rms_mms = 0.0
+
+        # =========================================================
+        # Velocity RMS
+        # =========================================================
+        with col2:
+
+            st.markdown(
+                f"""
+                <div style='background:#1e293b;
+                padding:30px;
+                border-radius:10px;
+                text-align:center'>
+
+                <h2>Getaran (Velocity RMS)</h2>
+
+                <h1>
+                {velocity_rms:.2f} mm/s²
+                </h1>
+
+                <h2>
+                Status: {status}
+                </h2>
+
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
 
         # =================================================
         # PEAK 3X
