@@ -273,6 +273,145 @@ acceleration_rms = float(latest["AccRMS"])
 status = latest["STATUS"]
 
 # =========================================================
+# HITUNG FREKUENSI 1× FFT DAN VELOCITY RMS
+# =========================================================
+
+one_x_actual_frequency = 0.0
+one_x_amplitude = 0.0
+velocity_rms = 0.0
+
+if fft_latest is not None:
+
+    try:
+
+        # -------------------------------------------------
+        # Ambil data FFT
+        # -------------------------------------------------
+
+        fft_sample_count = int(
+            fft_latest["sample_count"]
+        )
+
+        fft_sampling_frequency = float(
+            fft_latest["sampling_frequency"]
+        )
+
+        fft_data_temp = fft_latest["data"]
+
+        # -------------------------------------------------
+        # Jika data berupa string JSON
+        # -------------------------------------------------
+
+        if isinstance(fft_data_temp, str):
+
+            import json
+
+            fft_data_temp = json.loads(
+                fft_data_temp
+            )
+
+        fft_data_temp = np.array(
+            fft_data_temp,
+            dtype=float
+        )
+
+        # -------------------------------------------------
+        # Pastikan jumlah data benar
+        # -------------------------------------------------
+
+        if len(fft_data_temp) == fft_sample_count:
+
+            # -------------------------------------------------
+            # D110 → Acceleration mm/s²
+            # -------------------------------------------------
+
+            fft_data_acc_temp = (
+                fft_data_temp * 0.012387
+            )
+
+            # -------------------------------------------------
+            # Hitung FFT
+            # -------------------------------------------------
+
+            frequency_temp, amplitude_temp = calculate_fft(
+                fft_data_acc_temp,
+                fft_sampling_frequency
+            )
+
+            # -------------------------------------------------
+            # Frekuensi 1× dari RPM
+            # -------------------------------------------------
+
+            rpm_frequency_temp = rpm / 60.0
+
+            # -------------------------------------------------
+            # Cari peak FFT di sekitar frekuensi 1×
+            # -------------------------------------------------
+
+            if rpm_frequency_temp > 0:
+
+                mask_1x = (
+                    np.abs(
+                        frequency_temp
+                        - rpm_frequency_temp
+                    )
+                    <= 1.0
+                )
+
+                if np.any(mask_1x):
+
+                    local_indices_1x = np.where(
+                        mask_1x
+                    )[0]
+
+                    local_index_1x = (
+                        local_indices_1x[
+                            np.argmax(
+                                amplitude_temp[
+                                    local_indices_1x
+                                ]
+                            )
+                        ]
+                    )
+
+                    one_x_actual_frequency = (
+                        frequency_temp[
+                            local_index_1x
+                        ]
+                    )
+
+                    one_x_amplitude = (
+                        amplitude_temp[
+                            local_index_1x
+                        ]
+                    )
+
+            # -------------------------------------------------
+            # Acceleration RMS → Velocity RMS
+            # -------------------------------------------------
+
+            if one_x_actual_frequency > 0:
+
+                velocity_rms = (
+                    acceleration_rms
+                    /
+                    (
+                        2
+                        * np.pi
+                        * one_x_actual_frequency
+                    )
+                )
+
+            else:
+
+                velocity_rms = 0.0
+
+    except Exception:
+
+        one_x_actual_frequency = 0.0
+        one_x_amplitude = 0.0
+        velocity_rms = 0.0
+# =========================================================
 # AMBIL DATA CONTROL D310
 # =========================================================
 try:
@@ -474,35 +613,43 @@ with col1:
         use_container_width=True
     )
 
-
     # =========================================================
-    # Velocity RMS
-    # =========================================================
-    with col2:
+# VELOCITY RMS
+# =========================================================
 
-        st.markdown(
-            f"""
-            <div style='background:#1e293b;
-            padding:30px;
-            border-radius:10px;
-            text-align:center'>
+with col2:
 
-            <h2>Getaran (Velocity RMS)</h2>
+    st.markdown(
+        f"""
+        <div style='background:#1e293b;
+        padding:30px;
+        border-radius:10px;
+        text-align:center'>
 
-            <h1>
-            {velocity_rms:.2f} mm/s²
-            </h1>
+        <h2>Getaran (Velocity RMS)</h2>
 
-            <h2>
-            Status: {status}
-            </h2>
+        <h1>
+        {velocity_rms:.2f} mm/s
+        </h1>
 
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+        <h3>
+        Acceleration RMS:
+        {acceleration_rms:.2f} mm/s²
+        </h3>
 
+        <h3>
+        1× Frequency:
+        {one_x_actual_frequency:.2f} Hz
+        </h3>
 
+        <h2>
+        Status: {status}
+        </h2>
+
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # =====================================================
     # KONTROL MESIN
     # =====================================================
@@ -790,34 +937,6 @@ else:
             )
         )
 
-        # =========================================================
-        # Velocity RMS
-        # =========================================================
-        with col2:
-
-            st.markdown(
-                f"""
-                <div style='background:#1e293b;
-                padding:30px;
-                border-radius:10px;
-                text-align:center'>
-
-                <h2>Getaran (Velocity RMS)</h2>
-
-                <h1>
-                {velocity_rms:.2f} mm/s²
-                </h1>
-
-                <h2>
-                Status: {status}
-                </h2>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-
         # =================================================
         # PEAK 2X
         # =================================================
@@ -829,49 +948,6 @@ else:
                 amplitude
             )
         )
-
-        # =====================================================
-        # HITUNG VELOCITY RMS DARI ACCELERATION RMS
-        # =====================================================
-
-        if one_x_actual_frequency > 0:
-
-            velocity_rms_mms = (
-                acceleration_rms
-                / (2 * np.pi * one_x_actual_frequency)
-            )
-
-        else:
-
-            velocity_rms_mms = 0.0
-
-        # =========================================================
-        # Velocity RMS
-        # =========================================================
-        with col2:
-
-            st.markdown(
-                f"""
-                <div style='background:#1e293b;
-                padding:30px;
-                border-radius:10px;
-                text-align:center'>
-
-                <h2>Getaran (Velocity RMS)</h2>
-
-                <h1>
-                {velocity_rms:.2f} mm/s²
-                </h1>
-
-                <h2>
-                Status: {status}
-                </h2>
-
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
 
         # =================================================
         # PEAK 3X
