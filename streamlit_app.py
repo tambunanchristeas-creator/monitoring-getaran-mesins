@@ -639,7 +639,7 @@ with col2:
 
         <h3>
         1× Frequency:
-        {one_x_frequency:.2f} Hz
+        {one_x_actual_frequency:.2f} Hz
         </h3>
 
         <h2>
