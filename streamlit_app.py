@@ -326,7 +326,7 @@ if fft_latest is not None:
             # -------------------------------------------------
 
             fft_data_acc_temp = (
-                fft_data_temp * 12.387
+                fft_data_temp * 0.012387
             )
 
             # -------------------------------------------------
@@ -639,7 +639,7 @@ with col2:
 
         <h3>
         1× Frequency:
-        {one_x_actual_frequency:.2f} Hz
+        {one_x_frequency:.2f} Hz
         </h3>
 
         <h2>
@@ -819,7 +819,7 @@ else:
     # =====================================================
 
     # D110 × 12.387 = mm/s²
-    fft_data_acc = fft_data * 12.387
+    fft_data_acc = fft_data * 0.012387
 
     # =====================================================
     # VALIDASI
@@ -1007,7 +1007,7 @@ else:
                 "1× RPM",
                 f"{one_x_frequency:.2f} Hz",
                 f"Peak = {one_x_actual_frequency:.2f}Hz | "
-                f"Amp = {one_x_amplitude:.2f} mm/s²"
+                f"Amp = {one_x_amplitude:.2f}"
             )
 
         with h2:
@@ -1016,7 +1016,7 @@ else:
                 "2× RPM",
                 f"{two_x_frequency:.2f} Hz",
                 f"Peak = {two_x_actual_frequency:.2f}Hz | "
-                f"Amp = {two_x_amplitude:.2f} mm/s²"
+                f"Amp = {two_x_amplitude:.2f}"
             )
 
         with h3:
@@ -1025,7 +1025,7 @@ else:
                 "3× RPM",
                 f"{three_x_frequency:.2f} Hz",
                 f"Peak = {three_x_actual_frequency:.2f}Hz | "
-                f"Amp = {three_x_amplitude:.2f} mm/s²"
+                f"Amp = {three_x_amplitude:.2f}"
             )
         # =================================================
         # GRAFIK FFT
@@ -1035,7 +1035,7 @@ else:
 
             "Frequency": frequency,
 
-            "Magnitude": amplitude
+            "Acceleration": amplitude
 
         })
         
@@ -1063,7 +1063,7 @@ else:
 
                 x=df_fft["Frequency"],
 
-                y=df_fft["Magnitude"],
+                y=df_fft["Acceleration"],
 
                 mode="lines",
 
@@ -1241,7 +1241,7 @@ else:
             ),
 
             yaxis_title=(
-                "Magnitude (mm/s²)"
+                "Acceleration Amplitude (mm/s²)"
             ),
 
             xaxis=dict(
@@ -1284,7 +1284,7 @@ else:
 
             "D110": fft_data,
 
-            "Amplitudo": fft_data_acc
+            "Acceleration": fft_data_acc
 
         })
 
@@ -1294,7 +1294,7 @@ else:
 
             x="Time",
 
-            y="Amplitudo",
+            y="Acceleration",
 
             title=(
                 "500 Sampel Data Getaran "
@@ -1309,7 +1309,7 @@ else:
             ),
 
             yaxis_title=(
-                "Amplitudo (mm/s²)"
+                "Acceleration (mm/s²)"
             )
 
         )
@@ -1400,7 +1400,7 @@ with colg2:
     )
 
     fig_vib.update_layout(
-        title="Grafik Acceleration RMS",
+        title="Grafik Getaran",
         xaxis_title="Waktu",
         yaxis_title="AccRMS (mm/s²)"
     )
