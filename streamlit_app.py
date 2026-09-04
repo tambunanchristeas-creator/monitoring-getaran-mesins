@@ -273,6 +273,14 @@ acceleration_rms = float(latest["AccRMS"])
 status = latest["STATUS"]
 
 # =========================================================
+# FREKUENSI HARMONIK BERDASARKAN RPM
+# =========================================================
+
+one_x_frequency = rpm / 60.0
+two_x_frequency = one_x_frequency * 2
+three_x_frequency = one_x_frequency * 3
+
+# =========================================================
 # HITUNG FREKUENSI 1× FFT DAN VELOCITY RMS
 # =========================================================
 
@@ -390,7 +398,7 @@ if fft_latest is not None:
             # Acceleration RMS → Velocity RMS
             # -------------------------------------------------
 
-            if one_x_actual_frequency > 0:
+            if one_x_frequency > 0:
 
                 velocity_rms = (
                     acceleration_rms
@@ -398,7 +406,7 @@ if fft_latest is not None:
                     (
                         2
                         * np.pi
-                        * one_x_actual_frequency
+                        * one_x_frequency
                     )
                 )
 
@@ -639,7 +647,7 @@ with col2:
 
         <h3>
         1× Frequency:
-        {one_x_actual_frequency:.2f} Hz
+        {one_x_frequency:.2f} Hz
         </h3>
 
         <h2>
@@ -871,16 +879,6 @@ else:
 
             dominant_frequency = 0
             dominant_amplitude = 0
-
-        # =================================================
-        # FREKUENSI 1X, 2X, 3X RPM
-        # =================================================
-
-        rpm_frequency = rpm / 60.0
-
-        one_x_frequency = rpm_frequency
-        two_x_frequency = rpm_frequency * 2
-        three_x_frequency = rpm_frequency * 3
 
         # =================================================
         # FUNGSI MENCARI PEAK
