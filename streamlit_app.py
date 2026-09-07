@@ -888,7 +888,7 @@ else:
             target_frequency,
             frequency,
             amplitude,
-            bandwidth=1.0
+            bandwidth=1.5
         ):
 
             if target_frequency <= 0:
