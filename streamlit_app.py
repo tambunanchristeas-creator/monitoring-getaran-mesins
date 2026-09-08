@@ -81,7 +81,7 @@ def load_data():
         res = (
             supabase
             .table("monitoring")
-            .select("id,TIME,RPM,AccRMS,STATUS")
+            .select("id,TIME,RPM,Vrms,AccRMS,STATUS")
             .order("id", desc=True)
             .limit(100)
             .execute()
@@ -238,11 +238,12 @@ df["RPM"] = pd.to_numeric(
 
 
 # ARMS
-df["AccRMS"] = pd.to_numeric(
-    df["AccRMS"],
+df["Vrms"] = pd.to_numeric(
+    df["Vrms"],
     errors="coerce"
 ).fillna(0)
 
+df["Vrms"] = df["Vrms"] / 100.0
 
 # STATUS
 df["STATUS"] = (
@@ -268,9 +269,19 @@ latest = df.iloc[0]
 
 rpm = float(latest["RPM"])
 
+velocity_rms = float(latest["Vrms"])
+
 acceleration_rms = float(latest["AccRMS"])
 
 status = latest["STATUS"]
+
+# =========================================================
+# FREKUENSI HARMONIK BERDASARKAN RPM
+# =========================================================
+
+one_x_frequency = rpm / 60.0
+two_x_frequency = one_x_frequency * 2
+three_x_frequency = one_x_frequency * 3
 
 # =========================================================
 # HITUNG FREKUENSI 1× FFT DAN VELOCITY RMS
@@ -278,7 +289,6 @@ status = latest["STATUS"]
 
 one_x_actual_frequency = 0.0
 one_x_amplitude = 0.0
-velocity_rms = 0.0
 
 if fft_latest is not None:
 
@@ -386,25 +396,6 @@ if fft_latest is not None:
                         ]
                     )
 
-            # -------------------------------------------------
-            # Acceleration RMS → Velocity RMS
-            # -------------------------------------------------
-
-            if one_x_actual_frequency > 0:
-
-                velocity_rms = (
-                    acceleration_rms
-                    /
-                    (
-                        2
-                        * np.pi
-                        * one_x_actual_frequency
-                    )
-                )
-
-            else:
-
-                velocity_rms = 0.0
 
     except Exception:
 
@@ -639,7 +630,7 @@ with col2:
 
         <h3>
         1× Frequency:
-        {one_x_actual_frequency:.2f} Hz
+        {one_x_frequency:.2f} Hz
         </h3>
 
         <h2>
@@ -873,16 +864,6 @@ else:
             dominant_amplitude = 0
 
         # =================================================
-        # FREKUENSI 1X, 2X, 3X RPM
-        # =================================================
-
-        rpm_frequency = rpm / 60.0
-
-        one_x_frequency = rpm_frequency
-        two_x_frequency = rpm_frequency * 2
-        three_x_frequency = rpm_frequency * 3
-
-        # =================================================
         # FUNGSI MENCARI PEAK
         # =================================================
 
@@ -929,37 +910,37 @@ else:
         # PEAK 1X
         # =================================================
 
-        one_x_actual_frequency = one_x_frequency
-
-        one_x_index = np.argmin(
-            np.abs(frequency - one_x_frequency)
+        one_x_actual_frequency, one_x_amplitude = (
+            get_harmonic_amplitude(
+                one_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        one_x_amplitude = amplitude[one_x_index]
 
         # =================================================
         # PEAK 2X
         # =================================================
 
-        two_x_actual_frequency = two_x_frequency
-
-        two_x_index = np.argmin(
-            np.abs(frequency - two_x_frequency)
+        two_x_actual_frequency, two_x_amplitude = (
+            get_harmonic_amplitude(
+                two_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        two_x_amplitude = amplitude[two_x_index]
 
         # =================================================
         # PEAK 3X
         # =================================================
 
-        three_x_actual_frequency = three_x_frequency
-
-        three_x_index = np.argmin(
-            np.abs(frequency - three_x_frequency)
+        three_x_actual_frequency, three_x_amplitude = (
+            get_harmonic_amplitude(
+                three_x_frequency,
+                frequency,
+                amplitude
+            )
         )
-
-        three_x_amplitude = amplitude[three_x_index]
         # =================================================
         # KPI FFT
         # =================================================
@@ -1007,7 +988,7 @@ else:
                 "1× RPM",
                 f"{one_x_frequency:.2f} Hz",
                 f"Peak = {one_x_actual_frequency:.2f}Hz | "
-                f"Amp = {one_x_amplitude:.2f} mm/s²"
+                f"Amp = {one_x_amplitude:.2f}"
             )
 
         with h2:
@@ -1016,7 +997,7 @@ else:
                 "2× RPM",
                 f"{two_x_frequency:.2f} Hz",
                 f"Peak = {two_x_actual_frequency:.2f}Hz | "
-                f"Amp = {two_x_amplitude:.2f} mm/s²"
+                f"Amp = {two_x_amplitude:.2f}"
             )
 
         with h3:
@@ -1025,7 +1006,7 @@ else:
                 "3× RPM",
                 f"{three_x_frequency:.2f} Hz",
                 f"Peak = {three_x_actual_frequency:.2f}Hz | "
-                f"Amp = {three_x_amplitude:.2f} mm/s²"
+                f"Amp = {three_x_amplitude:.2f}"
             )
         # =================================================
         # GRAFIK FFT
@@ -1035,7 +1016,7 @@ else:
 
             "Frequency": frequency,
 
-            "Magnitude": amplitude
+            "Acceleration": amplitude
 
         })
         
@@ -1063,7 +1044,7 @@ else:
 
                 x=df_fft["Frequency"],
 
-                y=df_fft["Magnitude"],
+                y=df_fft["Acceleration"],
 
                 mode="lines",
 
@@ -1241,7 +1222,7 @@ else:
             ),
 
             yaxis_title=(
-                "Magnitude (mm/s²)"
+                "Acceleration Amplitude (mm/s²)"
             ),
 
             xaxis=dict(
@@ -1284,7 +1265,7 @@ else:
 
             "D110": fft_data,
 
-            "Amplitudo": fft_data_acc
+            "Acceleration": fft_data_acc
 
         })
 
@@ -1294,7 +1275,7 @@ else:
 
             x="Time",
 
-            y="Amplitudo",
+            y="Acceleration",
 
             title=(
                 "500 Sampel Data Getaran "
@@ -1309,7 +1290,7 @@ else:
             ),
 
             yaxis_title=(
-                "Amplitudo (mm/s²)"
+                "Acceleration (mm/s²)"
             )
 
         )
@@ -1383,7 +1364,7 @@ with colg2:
     fig_vib = px.line(
         df_plot,
         x="TIME",
-        y="AccRMS",
+        y="Vrms",
         markers=True
     )
 
@@ -1400,9 +1381,9 @@ with colg2:
     )
 
     fig_vib.update_layout(
-        title="Grafik Acceleration RMS",
+        title="Grafik Getaran - Velocity RMS",
         xaxis_title="Waktu",
-        yaxis_title="AccRMS (mm/s²)"
+        yaxis_title="velocity RMS (mm/s)"
     )
 
     st.plotly_chart(
