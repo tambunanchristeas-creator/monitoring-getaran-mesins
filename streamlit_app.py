@@ -152,22 +152,25 @@ if df.empty:
     st.stop()
 
 # =========================================================
-# FUNGSI HITUNG FFT
+# HITUNG FFT
 # =========================================================
-
 def calculate_fft(data, sampling_frequency):
 
-    signal = np.asarray(data, dtype=float)
-
     # -----------------------------------------------------
-    # Validasi
+    # Konversi ke numpy
     # -----------------------------------------------------
 
-    if len(signal) < 4:
-        return None, None, None
+    signal = np.array(
+        data,
+        dtype=float
+    )
 
-    if sampling_frequency <= 0:
-        return None, None, None
+    # -----------------------------------------------------
+    # Pastikan data cukup
+    # -----------------------------------------------------
+
+    if len(signal) < 2:
+        return None, None
 
     # -----------------------------------------------------
     # Hilangkan DC / nilai rata-rata
@@ -176,7 +179,7 @@ def calculate_fft(data, sampling_frequency):
     signal = signal - np.mean(signal)
 
     # -----------------------------------------------------
-    # Hann window
+    # Hanning window
     # -----------------------------------------------------
 
     window = np.hanning(len(signal))
@@ -184,10 +187,12 @@ def calculate_fft(data, sampling_frequency):
     signal_windowed = signal * window
 
     # -----------------------------------------------------
-    # FFT
+    # FFT real signal
     # -----------------------------------------------------
 
-    fft_result = np.fft.rfft(signal_windowed)
+    fft_result = np.fft.rfft(
+        signal_windowed
+    )
 
     # -----------------------------------------------------
     # Frekuensi
@@ -195,204 +200,24 @@ def calculate_fft(data, sampling_frequency):
 
     frequency = np.fft.rfftfreq(
         len(signal),
-        d=1.0 / sampling_frequency
+        d=1 / sampling_frequency
     )
 
     # -----------------------------------------------------
-    # Amplitudo satu sisi
+    # Magnitude
     # -----------------------------------------------------
 
     amplitude = (
         2.0 / np.sum(window)
     ) * np.abs(fft_result)
 
-    # DC tidak dikali 2
+    # DC jangan dikalikan 2
     amplitude[0] = (
         np.abs(fft_result[0])
         / np.sum(window)
     )
 
-    # -----------------------------------------------------
-    # Nyquist tidak perlu dikali 2
-    # jika jumlah sampel genap
-    # -----------------------------------------------------
-
-    if len(signal) % 2 == 0:
-        amplitude[-1] = (
-            np.abs(fft_result[-1])
-            / np.sum(window)
-        )
-
-    return frequency, amplitude, signal
-
-# =========================================================
-# INTERPOLASI PEAK FFT
-# =========================================================
-
-def interpolate_peak_frequency(
-    frequency,
-    amplitude,
-    index
-):
-
-    # Tidak bisa interpolasi di ujung
-    if index <= 0 or index >= len(amplitude) - 1:
-        return (
-            frequency[index],
-            amplitude[index]
-        )
-
-    y1 = amplitude[index - 1]
-    y2 = amplitude[index]
-    y3 = amplitude[index + 1]
-
-    denominator = (
-        y1
-        - 2.0 * y2
-        + y3
-    )
-
-    if denominator == 0:
-        return (
-            frequency[index],
-            amplitude[index]
-        )
-
-    # Parabolic interpolation
-    delta = 0.5 * (
-        (y1 - y3)
-        / denominator
-    )
-
-    frequency_resolution = (
-        frequency[1] - frequency[0]
-    )
-
-    estimated_frequency = (
-        frequency[index]
-        + delta * frequency_resolution
-    )
-
-    # Estimasi amplitude
-    estimated_amplitude = (
-        y2
-        - 0.25 * (y1 - y3) * delta
-    )
-
-    return (
-        estimated_frequency,
-        estimated_amplitude
-    )
-
-
-# =========================================================
-# CARI PEAK DI SEKITAR FREKUENSI TARGET
-# =========================================================
-
-def get_peak_near_frequency(
-    target_frequency,
-    frequency,
-    amplitude,
-    bandwidth=1.0
-):
-
-    if target_frequency <= 0:
-        return 0.0, 0.0
-
-    if len(frequency) == 0:
-        return 0.0, 0.0
-
-    # -----------------------------------------------------
-    # Jangan mencari di atas Nyquist
-    # -----------------------------------------------------
-
-    nyquist = frequency[-1]
-
-    if target_frequency > nyquist:
-        return 0.0, 0.0
-
-    # -----------------------------------------------------
-    # Batasi pencarian
-    # -----------------------------------------------------
-
-    lower = max(
-        0.0,
-        target_frequency - bandwidth
-    )
-
-    upper = min(
-        nyquist,
-        target_frequency + bandwidth
-    )
-
-    mask = (
-        (frequency >= lower)
-        &
-        (frequency <= upper)
-    )
-
-    if not np.any(mask):
-        return 0.0, 0.0
-
-    local_indices = np.where(mask)[0]
-
-    # -----------------------------------------------------
-    # Cari amplitudo terbesar
-    # -----------------------------------------------------
-
-    local_index = local_indices[
-        np.argmax(
-            amplitude[local_indices]
-        )
-    ]
-
-    # -----------------------------------------------------
-    # Interpolasi peak
-    # -----------------------------------------------------
-
-    return interpolate_peak_frequency(
-        frequency,
-        amplitude,
-        local_index
-    )
-
-
-# =========================================================
-# CARI PEAK PADA BAND FREKUENSI TERTENTU
-# =========================================================
-
-def get_band_peak(
-    lower_frequency,
-    upper_frequency,
-    frequency,
-    amplitude
-):
-
-    if lower_frequency >= upper_frequency:
-        return 0.0, 0.0
-
-    mask = (
-        (frequency >= lower_frequency)
-        &
-        (frequency <= upper_frequency)
-    )
-
-    if not np.any(mask):
-        return 0.0, 0.0
-
-    local_indices = np.where(mask)[0]
-
-    local_index = local_indices[
-        np.argmax(
-            amplitude[local_indices]
-        )
-    ]
-
-    return interpolate_peak_frequency(
-        frequency,
-        amplitude,
-        local_index
-    )
+    return frequency, amplitude
 
 # =========================================================
 # FORMAT DATA
@@ -945,218 +770,182 @@ if fft_latest is None:
 
 else:
 
-    try:
+    # =====================================================
+    # METADATA FFT
+    # =====================================================
 
-        # =================================================
-        # METADATA FFT
-        # =================================================
+    fft_id = fft_latest["id"]
 
-        fft_id = fft_latest["id"]
+    fft_time = fft_latest["created_at"]
 
-        fft_time = fft_latest["created_at"]
+    sample_count = int(
+        fft_latest["sample_count"]
+    )
 
-        sample_count = int(
-            fft_latest["sample_count"]
+    sampling_frequency = float(
+        fft_latest["sampling_frequency"]
+    )
+
+    fft_data = fft_latest["data"]
+
+    # -----------------------------------------------------
+    # Pastikan data berupa list
+    # -----------------------------------------------------
+
+    if isinstance(fft_data, str):
+
+        import json
+
+        fft_data = json.loads(
+            fft_data
         )
 
-        sampling_frequency = float(
-            fft_latest["sampling_frequency"]
+    fft_data = np.array(
+        fft_data,
+        dtype=float
+    )
+
+    # =====================================================
+    # KONVERSI D110 → PERCEPATAN
+    # =====================================================
+
+    # D110 × 12.387 = mm/s²
+    fft_data_acc = fft_data * 12.387
+
+    # =====================================================
+    # VALIDASI
+    # =====================================================
+
+    if len(fft_data) != sample_count:
+
+        st.error(
+            f"Jumlah data FFT tidak sesuai. "
+            f"Expected: {sample_count}, "
+            f"Received: {len(fft_data)}"
         )
 
-        fft_data = fft_latest["data"]
-
-        # -------------------------------------------------
-        # Data JSON → list
-        # -------------------------------------------------
-
-        if isinstance(fft_data, str):
-
-            import json
-
-            fft_data = json.loads(
-                fft_data
-            )
-
-        fft_data = np.asarray(
-            fft_data,
-            dtype=float
-        )
-
-        # =================================================
-        # VALIDASI PARAMETER
-        # =================================================
-
-        if sample_count < 4:
-
-            st.error(
-                "Jumlah sampel FFT terlalu sedikit."
-            )
-
-            st.stop()
-
-        if sampling_frequency <= 0:
-
-            st.error(
-                "Sampling frequency tidak valid."
-            )
-
-            st.stop()
-
-        if len(fft_data) != sample_count:
-
-            st.error(
-                f"Jumlah data FFT tidak sesuai. "
-                f"Expected: {sample_count}, "
-                f"Received: {len(fft_data)}"
-            )
-
-            st.stop()
-
-        # =================================================
-        # PARAMETER FFT
-        # =================================================
-
-        nyquist = (
-            sampling_frequency / 2.0
-        )
-
-        frequency_resolution = (
-            sampling_frequency
-            / sample_count
-        )
-
-        capture_duration = (
-            sample_count
-            / sampling_frequency
-        )
-
-        # =================================================
-        # KONVERSI D110
-        # =================================================
-
-        # D110 × 12.387 = mm/s²
-
-        fft_data_acc = (
-            fft_data * 12.387
-        )
+    else:
 
         # =================================================
         # HITUNG FFT
         # =================================================
 
-        frequency, amplitude, signal_detrended = (
-            calculate_fft(
-                fft_data_acc,
-                sampling_frequency
-            )
+        frequency, amplitude = calculate_fft(
+            fft_data_acc,
+            sampling_frequency
         )
 
-        if frequency is None:
-
-            st.error(
-                "FFT gagal dihitung."
-            )
-
-            st.stop()
+        # BUAT FIGURE FFT
+        fig_fft = go.Figure()
 
         # =================================================
-        # DOMINANT FREQUENCY
+        # FREKUENSI DOMINAN
         # =================================================
-
         if len(amplitude) > 1:
 
             # Abaikan DC / 0 Hz
             dominant_index = (
                 np.argmax(
                     amplitude[1:]
-                ) + 1
+            ) + 1
             )
 
-            (
-                dominant_frequency,
-                dominant_amplitude
-            ) = interpolate_peak_frequency(
-                frequency,
-                amplitude,
-                dominant_index
+            dominant_frequency = (
+                frequency[dominant_index]
+            )
+
+            dominant_amplitude = (
+                amplitude[dominant_index]
             )
 
         else:
 
-            dominant_frequency = 0.0
-            dominant_amplitude = 0.0
+            dominant_frequency = 0
+            dominant_amplitude = 0
 
         # =================================================
-        # FREKUENSI 1× 2× 3× BERDASARKAN RPM
+        # FUNGSI MENCARI PEAK
         # =================================================
 
-        one_x_frequency = (
-            rpm / 60.0
-        )
-
-        two_x_frequency = (
-            one_x_frequency * 2.0
-        )
-
-        three_x_frequency = (
-            one_x_frequency * 3.0
-        )
-
-        # =================================================
-        # CARI PEAK HARMONIK
-        # =================================================
-
-        harmonic_bandwidth = 1.0
-
-        (
-            one_x_actual_frequency,
-            one_x_amplitude
-        ) = get_peak_near_frequency(
-            one_x_frequency,
+        def get_harmonic_amplitude(
+            target_frequency,
             frequency,
             amplitude,
-            harmonic_bandwidth
-        )
+            bandwidth=1.0
+        ):
 
-        (
-            two_x_actual_frequency,
-            two_x_amplitude
-        ) = get_peak_near_frequency(
-            two_x_frequency,
-            frequency,
-            amplitude,
-            harmonic_bandwidth
-        )
+            if target_frequency <= 0:
+                return 0.0, 0.0
 
-        (
-            three_x_actual_frequency,
-            three_x_amplitude
-        ) = get_peak_near_frequency(
-            three_x_frequency,
-            frequency,
-            amplitude,
-            harmonic_bandwidth
+            # Cari semua titik FFT di sekitar
+            # target frequency ± bandwidth
+
+            mask = (
+                np.abs(
+                    frequency - target_frequency
+                )
+                <= bandwidth
+            )
+
+            if not np.any(mask):
+                return 0.0, 0.0
+
+            local_indices = np.where(mask)[0]
+
+            # Cari peak terbesar di sekitar
+            local_index = (
+                local_indices[
+                    np.argmax(
+                        amplitude[local_indices]
+                    )
+                ]
+            )
+
+            return (
+                frequency[local_index],
+                amplitude[local_index]
+            )
+
+        # =================================================
+        # PEAK 1X
+        # =================================================
+
+        one_x_actual_frequency, one_x_amplitude = (
+            get_harmonic_amplitude(
+                one_x_frequency,
+                frequency,
+                amplitude
+            )
         )
 
         # =================================================
-        # DIAGNOSTIC KHUSUS PEAK 83–84 Hz
+        # PEAK 2X
         # =================================================
 
-        (
-            peak_83_84_frequency,
-            peak_83_84_amplitude
-        ) = get_band_peak(
-            82.0,
-            86.0,
-            frequency,
-            amplitude
+        two_x_actual_frequency, two_x_amplitude = (
+            get_harmonic_amplitude(
+                two_x_frequency,
+                frequency,
+                amplitude
+            )
         )
 
+        # =================================================
+        # PEAK 3X
+        # =================================================
+
+        three_x_actual_frequency, three_x_amplitude = (
+            get_harmonic_amplitude(
+                three_x_frequency,
+                frequency,
+                amplitude
+            )
+        )
         # =================================================
         # KPI FFT
         # =================================================
 
-        c1, c2, c3, c4, c5 = st.columns(5)
+        c1, c2, c3, c4 = st.columns(4)
 
         with c1:
 
@@ -1170,171 +959,57 @@ else:
             st.metric(
                 "Sampling",
                 f"{sampling_frequency:.0f} Hz"
-            )
+                )
 
         with c3:
 
             st.metric(
-                "Resolusi FFT",
-                f"{frequency_resolution:.2f} Hz"
-            )
+            "Resolusi FFT",
+            f"{sampling_frequency / sample_count:.2f} Hz"
+        )
 
         with c4:
 
             st.metric(
-                "Nyquist",
-                f"{nyquist:.0f} Hz"
-            )
-
-        with c5:
-
-            st.metric(
-                "Durasi Capture",
-                f"{capture_duration:.2f} s"
-            )
-
-        # =================================================
-        # DOMINANT PEAK
-        # =================================================
-
-        st.subheader(
-            "Peak Dominan"
+            "RPM",
+            f"{rpm:.0f}"
         )
 
-        p1, p2, p3 = st.columns(3)
-
-        with p1:
-
-            st.metric(
-                "Dominant Frequency",
-                f"{dominant_frequency:.2f} Hz"
-            )
-
-        with p2:
-
-            st.metric(
-                "Amplitude",
-                f"{dominant_amplitude:.2f} mm/s²"
-            )
-
-        with p3:
-
-            st.metric(
-                "RPM",
-                f"{rpm:.0f}"
-            )
 
         # =================================================
         # HARMONIK RPM
         # =================================================
 
-        st.subheader(
-            "Analisis Harmonik RPM"
-        )
-
         h1, h2, h3 = st.columns(3)
 
         with h1:
 
-            if one_x_frequency <= nyquist:
-
-                st.metric(
-                    "1× RPM",
-                    f"{one_x_frequency:.2f} Hz",
-                    f"FFT = {one_x_actual_frequency:.2f} Hz | "
-                    f"Amp = {one_x_amplitude:.2f}"
-                )
-
-            else:
-
-                st.metric(
-                    "1× RPM",
-                    f"{one_x_frequency:.2f} Hz",
-                    "Di atas Nyquist"
-                )
+            st.metric(
+                "1× RPM",
+                f"{one_x_frequency:.2f} Hz",
+                f"Peak = {one_x_actual_frequency:.2f}Hz | "
+                f"Amp = {one_x_amplitude:.2f}"
+            )
 
         with h2:
 
-            if two_x_frequency <= nyquist:
-
-                st.metric(
-                    "2× RPM",
-                    f"{two_x_frequency:.2f} Hz",
-                    f"FFT = {two_x_actual_frequency:.2f} Hz | "
-                    f"Amp = {two_x_amplitude:.2f}"
-                )
-
-            else:
-
-                st.metric(
-                    "2× RPM",
-                    f"{two_x_frequency:.2f} Hz",
-                    "Di atas Nyquist"
-                )
+            st.metric(
+                "2× RPM",
+                f"{two_x_frequency:.2f} Hz",
+                f"Peak = {two_x_actual_frequency:.2f}Hz | "
+                f"Amp = {two_x_amplitude:.2f}"
+            )
 
         with h3:
 
-            if three_x_frequency <= nyquist:
-
-                st.metric(
-                    "3× RPM",
-                    f"{three_x_frequency:.2f} Hz",
-                    f"FFT = {three_x_actual_frequency:.2f} Hz | "
-                    f"Amp = {three_x_amplitude:.2f}"
-                )
-
-            else:
-
-                st.metric(
-                    "3× RPM",
-                    f"{three_x_frequency:.2f} Hz",
-                    "Di atas Nyquist"
-                )
-
-        # =================================================
-        # DIAGNOSTIC 83–84 Hz
-        # =================================================
-
-        st.subheader(
-            "🔎 Monitoring Peak 83–84 Hz"
-        )
-
-        d1, d2, d3 = st.columns(3)
-
-        with d1:
-
             st.metric(
-                "Peak 82–86 Hz",
-                f"{peak_83_84_frequency:.2f} Hz"
+                "3× RPM",
+                f"{three_x_frequency:.2f} Hz",
+                f"Peak = {three_x_actual_frequency:.2f}Hz | "
+                f"Amp = {three_x_amplitude:.2f}"
             )
-
-        with d2:
-
-            st.metric(
-                "Amplitude 82–86 Hz",
-                f"{peak_83_84_amplitude:.2f} mm/s²"
-            )
-
-        with d3:
-
-            if peak_83_84_amplitude > 0:
-
-                st.write(
-                    f"RPM saat ini: **{rpm:.0f} RPM**"
-                )
-
-                st.write(
-                    f"2× RPM: **{two_x_frequency:.2f} Hz**"
-                )
-
-            else:
-
-                st.write(
-                    "Tidak ditemukan peak pada 82–86 Hz."
-                )
-
         # =================================================
-        # DATA FFT UNTUK GRAFIK
+        # GRAFIK FFT
         # =================================================
 
         df_fft = pd.DataFrame({
@@ -1344,16 +1019,24 @@ else:
             "Acceleration": amplitude
 
         })
+        
+        # -------------------------------------------------
+        # Batasi sampai Nyquist
+        # -------------------------------------------------
 
-        # =================================================
-        # GRAFIK FFT
-        # =================================================
+        nyquist = (
+            sampling_frequency / 2
+        )
+
+        df_fft = df_fft[
+            df_fft["Frequency"] <= nyquist
+        ]
+
+        # -------------------------------------------------
+        # Grafik
+        # -------------------------------------------------
 
         fig_fft = go.Figure()
-
-        # -------------------------------------------------
-        # FFT Spectrum
-        # -------------------------------------------------
 
         fig_fft.add_trace(
 
@@ -1368,19 +1051,152 @@ else:
                 name="Acceleration FFT"
 
             )
+
         )
 
-        # =================================================
-        # MARKER DOMINANT
-        # =================================================
+        # -------------------------------------------------
+        # Garis 1x RPM
+        # -------------------------------------------------
+
+        if ( 
+            one_x_frequency > 0
+            and one_x_frequency <= nyquist
+        ):
+
+            fig_fft.add_trace(
+                go.Scatter(
+                x=[one_x_actual_frequency],
+                y=[one_x_amplitude],
+                mode="markers",
+                marker={
+                    "size": 12
+                },
+                name="peak 1x"
+                )
+            )
+            # -------------------------------------------------
+            # Garis 2× RPM
+            # -------------------------------------------------
+
+            if(
+                two_x_frequency > 0 
+                and two_x_frequency <= nyquist
+            ):
+                fig_fft.add_trace(
+                    go.Scatter(
+                        x=[two_x_actual_frequency],
+                        y=[two_x_amplitude],
+                        mode="markers",
+                        marker={
+                            "size": 12
+                        },
+                        name="Peak 2x"
+                    )
+                )
+            # -------------------------------------------------
+            # Garis 3× RPM
+            # -------------------------------------------------
+
+            if (
+                three_x_frequency > 0 
+                and three_x_frequency <= nyquist
+            ):
+                fig_fft.add_trace(
+                    go.Scatter(
+                        x=[three_x_actual_frequency],
+                        y=[three_x_amplitude],
+                        mode="markers",
+                        marker={
+                            "size": 12
+                        },
+                        name="Peak 3x"
+                    )
+                )
+
+            # =================================================
+            # GARIS 1X RPM
+            # =================================================
+
+            if one_x_frequency > 0:
+
+                fig_fft.add_vline(
+
+                    x=one_x_frequency,
+
+                    line_dash="dash",
+
+                    annotation_text=(
+                        f"1× = {one_x_frequency:.2f} Hz"
+                    ),
+
+                    annotation_position="top"
+
+                )
+
+
+            # =================================================
+            # GARIS 2X RPM
+            # =================================================
+
+            if (
+                two_x_frequency > 0
+                and two_x_frequency <= nyquist
+            ):
+
+                fig_fft.add_vline(
+
+                x=two_x_frequency,
+
+                line_dash="dash",
+
+                annotation_text=(
+                    f"2× = {two_x_frequency:.2f} Hz"
+                ),
+
+                annotation_position="top"
+
+        )
+
+
+            # =================================================
+            # GARIS 3X RPM
+            # =================================================
+
+            if (
+                three_x_frequency > 0
+                and three_x_frequency <= nyquist
+            ):
+
+                fig_fft.add_vline(
+
+                    x=three_x_frequency,
+
+                    line_dash="dash",
+
+                    annotation_text=(
+                        f"3× = {three_x_frequency:.2f} Hz"
+                ),
+
+                annotation_position="top"
+
+            )             
+
+    
+        # -------------------------------------------------
+        # Tandai frekuensi dominan
+        # -------------------------------------------------
 
         fig_fft.add_trace(
 
             go.Scatter(
 
-                x=[dominant_frequency],
+                x=[
+                    dominant_frequency
+                ],
 
-                y=[dominant_amplitude],
+                y=[
+                    dominant_amplitude
+                ],
 
                 mode="markers",
 
@@ -1388,232 +1204,11 @@ else:
                     "size": 12
                 },
 
-                name="Dominant Peak",
-
-                hovertemplate=(
-                    "Dominant<br>"
-                    "Frequency: %{x:.2f} Hz<br>"
-                    "Amplitude: %{y:.2f} mm/s²"
-                    "<extra></extra>"
-                )
+                name="Dominant Frequency"
 
             )
+
         )
-
-        # =================================================
-        # MARKER 1×
-        # =================================================
-
-        if (
-            one_x_frequency > 0
-            and one_x_frequency <= nyquist
-        ):
-
-            fig_fft.add_trace(
-
-                go.Scatter(
-
-                    x=[one_x_actual_frequency],
-
-                    y=[one_x_amplitude],
-
-                    mode="markers",
-
-                    marker={
-                        "size": 10
-                    },
-
-                    name="Peak 1×",
-
-                    hovertemplate=(
-                        "1× RPM<br>"
-                        "Frequency: %{x:.2f} Hz<br>"
-                        "Amplitude: %{y:.2f} mm/s²"
-                        "<extra></extra>"
-                    )
-
-                )
-            )
-
-            fig_fft.add_vline(
-
-                x=one_x_frequency,
-
-                line_dash="dash",
-
-                annotation_text=(
-                    f"1× = "
-                    f"{one_x_frequency:.2f} Hz"
-                ),
-
-                annotation_position="top"
-
-            )
-
-        # =================================================
-        # MARKER 2×
-        # =================================================
-
-        if (
-            two_x_frequency > 0
-            and two_x_frequency <= nyquist
-        ):
-
-            fig_fft.add_trace(
-
-                go.Scatter(
-
-                    x=[two_x_actual_frequency],
-
-                    y=[two_x_amplitude],
-
-                    mode="markers",
-
-                    marker={
-                        "size": 10
-                    },
-
-                    name="Peak 2×",
-
-                    hovertemplate=(
-                        "2× RPM<br>"
-                        "Frequency: %{x:.2f} Hz<br>"
-                        "Amplitude: %{y:.2f} mm/s²"
-                        "<extra></extra>"
-                    )
-
-                )
-            )
-
-            fig_fft.add_vline(
-
-                x=two_x_frequency,
-
-                line_dash="dash",
-
-                annotation_text=(
-                    f"2× = "
-                    f"{two_x_frequency:.2f} Hz"
-                ),
-
-                annotation_position="top"
-
-            )
-
-        # =================================================
-        # MARKER 3×
-        # =================================================
-
-        if (
-            three_x_frequency > 0
-            and three_x_frequency <= nyquist
-        ):
-
-            fig_fft.add_trace(
-
-                go.Scatter(
-
-                    x=[three_x_actual_frequency],
-
-                    y=[three_x_amplitude],
-
-                    mode="markers",
-
-                    marker={
-                        "size": 10
-                    },
-
-                    name="Peak 3×",
-
-                    hovertemplate=(
-                        "3× RPM<br>"
-                        "Frequency: %{x:.2f} Hz<br>"
-                        "Amplitude: %{y:.2f} mm/s²"
-                        "<extra></extra>"
-                    )
-
-                )
-            )
-
-            fig_fft.add_vline(
-
-                x=three_x_frequency,
-
-                line_dash="dash",
-
-                annotation_text=(
-                    f"3× = "
-                    f"{three_x_frequency:.2f} Hz"
-                ),
-
-                annotation_position="top"
-
-            )
-
-        # =================================================
-        # TANDAI AREA 82–86 Hz
-        # =================================================
-
-        if nyquist >= 82:
-
-            upper_83 = min(
-                86,
-                nyquist
-            )
-
-            fig_fft.add_vrect(
-
-                x0=82,
-
-                x1=upper_83,
-
-                fillcolor="gray",
-
-                opacity=0.15,
-
-                line_width=0,
-
-                annotation_text="82–86 Hz",
-
-                annotation_position="top left"
-
-            )
-
-            if peak_83_84_frequency > 0:
-
-                fig_fft.add_trace(
-
-                    go.Scatter(
-
-                        x=[
-                            peak_83_84_frequency
-                        ],
-
-                        y=[
-                            peak_83_84_amplitude
-                        ],
-
-                        mode="markers",
-
-                        marker={
-                            "size": 14
-                        },
-
-                        name="Peak 83–84 Hz",
-
-                        hovertemplate=(
-                            "Peak 82–86 Hz<br>"
-                            "Frequency: %{x:.2f} Hz<br>"
-                            "Amplitude: %{y:.2f} mm/s²"
-                            "<extra></extra>"
-                        )
-
-                    )
-                )
-
-        # =================================================
-        # LAYOUT FFT
-        # =================================================
 
         fig_fft.update_layout(
 
@@ -1627,22 +1222,17 @@ else:
             ),
 
             yaxis_title=(
-                "Acceleration Amplitude "
-                "(mm/s²)"
+                "Acceleration Amplitude (mm/s²)"
             ),
 
             xaxis=dict(
-
                 range=[
                     0,
                     nyquist
                 ]
-
             ),
 
-            hovermode="x unified",
-
-            height=600
+            hovermode="x unified"
 
         )
 
@@ -1688,20 +1278,20 @@ else:
             y="Acceleration",
 
             title=(
-                "Raw Signal - 500 Sampel"
+                "500 Sampel Data Getaran "
             )
 
         )
 
         fig_raw.update_layout(
 
-            xaxis_title="Time (s)",
+            xaxis_title=(
+                "Time (s)"
+            ),
 
             yaxis_title=(
                 "Acceleration (mm/s²)"
-            ),
-
-            height=450
+            )
 
         )
 
@@ -1721,22 +1311,10 @@ else:
 
             f"FFT ID: {fft_id} | "
             f"Data diterima: {fft_time} | "
-            f"N = {sample_count} | "
-            f"Fs = {sampling_frequency:.0f} Hz | "
-            f"Δf = {frequency_resolution:.2f} Hz | "
-            f"Nyquist = {nyquist:.0f} Hz | "
-            f"Durasi = {capture_duration:.2f} s"
+            f"Resolusi frekuensi: "
+            f"{sampling_frequency / sample_count:.2f} Hz"
 
         )
-
-    except Exception as e:
-
-        st.error(
-            "Terjadi kesalahan saat analisis FFT."
-        )
-
-        st.exception(e)
-        
 # =========================================================
 # DATA UNTUK GRAFIK
 # =========================================================
