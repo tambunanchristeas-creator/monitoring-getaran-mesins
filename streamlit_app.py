@@ -238,11 +238,12 @@ df["RPM"] = pd.to_numeric(
 
 
 # ARMS
-df["AccRMS"] = pd.to_numeric(
-    df["AccRMS"],
+df["Vrms"] = pd.to_numeric(
+    df["Vrms"],
     errors="coerce"
 ).fillna(0)
 
+df["Vrms"] = df["Vrms"] / 100.0
 
 # STATUS
 df["STATUS"] = (
@@ -268,6 +269,8 @@ latest = df.iloc[0]
 
 rpm = float(latest["RPM"])
 
+velocity_rms = float(latest["Vrms"])
+
 acceleration_rms = float(latest["AccRMS"])
 
 status = latest["STATUS"]
@@ -286,7 +289,6 @@ three_x_frequency = one_x_frequency * 3
 
 one_x_actual_frequency = 0.0
 one_x_amplitude = 0.0
-velocity_rms = 0.0
 
 if fft_latest is not None:
 
@@ -394,25 +396,6 @@ if fft_latest is not None:
                         ]
                     )
 
-            # -------------------------------------------------
-            # Acceleration RMS → Velocity RMS
-            # -------------------------------------------------
-
-            if one_x_frequency > 0:
-
-                velocity_rms = (
-                    acceleration_rms
-                    /
-                    (
-                        2
-                        * np.pi
-                        * one_x_frequency
-                    )
-                )
-
-            else:
-
-                velocity_rms = 0.0
 
     except Exception:
 
@@ -1381,7 +1364,7 @@ with colg2:
     fig_vib = px.line(
         df_plot,
         x="TIME",
-        y="AccRMS",
+        y="Vrms",
         markers=True
     )
 
@@ -1398,9 +1381,9 @@ with colg2:
     )
 
     fig_vib.update_layout(
-        title="Grafik Getaran",
+        title="Grafik Getaran - Velocity RMS",
         xaxis_title="Waktu",
-        yaxis_title="AccRMS (mm/s²)"
+        yaxis_title="velocity RMS (mm/s)"
     )
 
     st.plotly_chart(
