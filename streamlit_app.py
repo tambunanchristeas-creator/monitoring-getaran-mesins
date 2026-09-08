@@ -912,7 +912,7 @@ else:
 
         one_x_actual_frequency, one_x_amplitude = (
             get_harmonic_amplitude(
-                one_x_frequency,
+                one_x_actual_frequency,
                 frequency,
                 amplitude
             )
