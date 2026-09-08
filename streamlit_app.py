@@ -81,7 +81,7 @@ def load_data():
         res = (
             supabase
             .table("monitoring")
-            .select("id,TIME,RPM,AccRMS,STATUS")
+            .select("id,TIME,RPM,Vrms,AccRMS,STATUS")
             .order("id", desc=True)
             .limit(100)
             .execute()
