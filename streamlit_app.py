@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
 import time
+import json
 from streamlit_autorefresh import st_autorefresh
 
 
@@ -81,7 +82,9 @@ def load_data():
         res = (
             supabase
             .table("monitoring")
-            .select("id,TIME,RPM,Vrms,AccRMS,STATUS")
+            .select(
+                "id,TIME,RPM,VRMSX,VRMSY,VRMSZ,ARMSX,ARMSY,ARMSZ,STATUS"
+            )
             .order("id", desc=True)
             .limit(100)
             .execute()
@@ -108,7 +111,7 @@ def load_fft_data():
             supabase
             .table("FFT")
             .select(
-                "id,created_at,sample_count,sampling_frequency,data"
+                "id,created_at,sample_count,sampling_frequency,data_x,data_y,data_z"
             )
             .order(
                 "id",
@@ -220,38 +223,32 @@ def calculate_fft(data, sampling_frequency):
     return frequency, amplitude
 
 # =========================================================
-# FORMAT DATA
+# FORMAT DATA MONITORING
 # =========================================================
 
-# TIME
-df["TIME"] = pd.to_datetime(
-    df["TIME"],
-    errors="coerce"
-)
-
-
-# RPM
 df["RPM"] = pd.to_numeric(
     df["RPM"],
     errors="coerce"
 ).fillna(0)
 
+for kolom in [
+    "VRMSX",
+    "VRMSY",
+    "VRMSZ",
+    "ARMSX",
+    "ARMSY",
+    "ARMSZ"
+]:
+    df[kolom] = pd.to_numeric(
+        df[kolom],
+        errors="coerce"
+    ).fillna(0)
 
-# ARMS
-df["Vrms"] = pd.to_numeric(
-    df["Vrms"],
-    errors="coerce"
-).fillna(0)
-
-df["Vrms"] = df["Vrms"] / 100.0
-
-# STATUS
 df["STATUS"] = (
     df["STATUS"]
     .astype(str)
     .str.upper()
 )
-
 
 # =========================================================
 # URUTKAN DATA
@@ -269,10 +266,13 @@ latest = df.iloc[0]
 
 rpm = float(latest["RPM"])
 
-velocity_rms = float(latest["Vrms"])
+velocity_rms_x = float(latest["VRMSX"])
+velocity_rms_y = float(latest["VRMSY"])
+velocity_rms_z = float(latest["VRMSZ"])
 
-acceleration_rms = float(latest["AccRMS"])
-
+acceleration_rms_x = float(latest["ARMSX"])
+acceleration_rms_y = float(latest["ARMSY"])
+acceleration_rms_z = float(latest["ARMSZ"])
 status = latest["STATUS"]
 
 # =========================================================
@@ -283,125 +283,6 @@ one_x_frequency = rpm / 60.0
 two_x_frequency = one_x_frequency * 2
 three_x_frequency = one_x_frequency * 3
 
-# =========================================================
-# HITUNG FREKUENSI 1× FFT DAN VELOCITY RMS
-# =========================================================
-
-one_x_actual_frequency = 0.0
-one_x_amplitude = 0.0
-
-if fft_latest is not None:
-
-    try:
-
-        # -------------------------------------------------
-        # Ambil data FFT
-        # -------------------------------------------------
-
-        fft_sample_count = int(
-            fft_latest["sample_count"]
-        )
-
-        fft_sampling_frequency = float(
-            fft_latest["sampling_frequency"]
-        )
-
-        fft_data_temp = fft_latest["data"]
-
-        # -------------------------------------------------
-        # Jika data berupa string JSON
-        # -------------------------------------------------
-
-        if isinstance(fft_data_temp, str):
-
-            import json
-
-            fft_data_temp = json.loads(
-                fft_data_temp
-            )
-
-        fft_data_temp = np.array(
-            fft_data_temp,
-            dtype=float
-        )
-
-        # -------------------------------------------------
-        # Pastikan jumlah data benar
-        # -------------------------------------------------
-
-        if len(fft_data_temp) == fft_sample_count:
-
-            # -------------------------------------------------
-            # D110 → Acceleration mm/s²
-            # -------------------------------------------------
-
-            fft_data_acc_temp = (
-                fft_data_temp * 12.387
-            )
-
-            # -------------------------------------------------
-            # Hitung FFT
-            # -------------------------------------------------
-
-            frequency_temp, amplitude_temp = calculate_fft(
-                fft_data_acc_temp,
-                fft_sampling_frequency
-            )
-
-            # -------------------------------------------------
-            # Frekuensi 1× dari RPM
-            # -------------------------------------------------
-
-            rpm_frequency_temp = rpm / 60.0
-
-            # -------------------------------------------------
-            # Cari peak FFT di sekitar frekuensi 1×
-            # -------------------------------------------------
-
-            if rpm_frequency_temp > 0:
-
-                mask_1x = (
-                    np.abs(
-                        frequency_temp
-                        - rpm_frequency_temp
-                    )
-                    <= 1.0
-                )
-
-                if np.any(mask_1x):
-
-                    local_indices_1x = np.where(
-                        mask_1x
-                    )[0]
-
-                    local_index_1x = (
-                        local_indices_1x[
-                            np.argmax(
-                                amplitude_temp[
-                                    local_indices_1x
-                                ]
-                            )
-                        ]
-                    )
-
-                    one_x_actual_frequency = (
-                        frequency_temp[
-                            local_index_1x
-                        ]
-                    )
-
-                    one_x_amplitude = (
-                        amplitude_temp[
-                            local_index_1x
-                        ]
-                    )
-
-
-    except Exception:
-
-        one_x_actual_frequency = 0.0
-        one_x_amplitude = 0.0
-        velocity_rms = 0.0
 # =========================================================
 # AMBIL DATA CONTROL D310
 # =========================================================
@@ -620,12 +501,19 @@ with col2:
         <h2>Getaran (Velocity RMS)</h2>
 
         <h1>
-        {velocity_rms:.2f} mm/s
+        {velocity_rms_x:.2f} mm/s
         </h1>
 
         <h3>
-        Acceleration RMS:
-        {acceleration_rms:.2f} mm/s²
+        Acceleration RMS X: {acceleration_rms_x:.2f} mm/s²
+        </h3>
+
+        <h3>
+        Acceleration RMS Y: {acceleration_rms_y:.2f} mm/s²
+        </h3>
+
+        <h3>
+        Acceleration RMS Z: {acceleration_rms_z:.2f} mm/s²
         </h3>
 
         <h3>
@@ -764,9 +652,7 @@ st.header("📊 Analisis FFT Getaran")
 
 if fft_latest is None:
 
-    st.warning(
-        "Belum ada data FFT dari PLC."
-    )
+    st.warning("Belum ada data FFT dari PLC.")
 
 else:
 
@@ -775,7 +661,6 @@ else:
     # =====================================================
 
     fft_id = fft_latest["id"]
-
     fft_time = fft_latest["created_at"]
 
     sample_count = int(
@@ -786,534 +671,372 @@ else:
         fft_latest["sampling_frequency"]
     )
 
-    fft_data = fft_latest["data"]
+    # =====================================================
+    # AMBIL DATA X, Y, Z
+    # =====================================================
 
-    # -----------------------------------------------------
-    # Pastikan data berupa list
-    # -----------------------------------------------------
+    fft_data_x = fft_latest["data_x"]
+    fft_data_y = fft_latest["data_y"]
+    fft_data_z = fft_latest["data_z"]
 
-    if isinstance(fft_data, str):
+    if isinstance(fft_data_x, str):
+        fft_data_x = json.loads(fft_data_x)
 
-        import json
+    if isinstance(fft_data_y, str):
+        fft_data_y = json.loads(fft_data_y)
 
-        fft_data = json.loads(
-            fft_data
-        )
+    if isinstance(fft_data_z, str):
+        fft_data_z = json.loads(fft_data_z)
 
-    fft_data = np.array(
-        fft_data,
+    fft_data_x = np.asarray(
+        fft_data_x,
+        dtype=float
+    )
+
+    fft_data_y = np.asarray(
+        fft_data_y,
+        dtype=float
+    )
+
+    fft_data_z = np.asarray(
+        fft_data_z,
         dtype=float
     )
 
     # =====================================================
-    # KONVERSI D110 → PERCEPATAN
+    # KONVERSI D110 KE PERCEPATAN
+    # =====================================================
+    # Gunakan faktor ini hanya jika data_x, data_y, data_z
+    # masih berupa nilai D110.
+
+    fft_data_acc_x = fft_data_x * 12.387
+    fft_data_acc_y = fft_data_y * 12.387
+    fft_data_acc_z = fft_data_z * 12.387
+
+    # =====================================================
+    # VALIDASI DATA
     # =====================================================
 
-    # D110 × 12.387 = mm/s²
-    fft_data_acc = fft_data * 12.387
-
-    # =====================================================
-    # VALIDASI
-    # =====================================================
-
-    if len(fft_data) != sample_count:
+    if (
+        len(fft_data_acc_x) != sample_count
+        or len(fft_data_acc_y) != sample_count
+        or len(fft_data_acc_z) != sample_count
+    ):
 
         st.error(
             f"Jumlah data FFT tidak sesuai. "
             f"Expected: {sample_count}, "
-            f"Received: {len(fft_data)}"
+            f"X: {len(fft_data_acc_x)}, "
+            f"Y: {len(fft_data_acc_y)}, "
+            f"Z: {len(fft_data_acc_z)}"
         )
+
+    elif sampling_frequency <= 0:
+
+        st.error("Sampling frequency harus lebih besar dari 0 Hz.")
 
     else:
 
         # =================================================
-        # HITUNG FFT
+        # HITUNG FFT X, Y, Z
         # =================================================
 
-        frequency, amplitude = calculate_fft(
-            fft_data_acc,
+        frequency_x, amplitude_x = calculate_fft(
+            fft_data_acc_x,
             sampling_frequency
         )
 
-        # BUAT FIGURE FFT
-        fig_fft = go.Figure()
+        frequency_y, amplitude_y = calculate_fft(
+            fft_data_acc_y,
+            sampling_frequency
+        )
+
+        frequency_z, amplitude_z = calculate_fft(
+            fft_data_acc_z,
+            sampling_frequency
+        )
 
         # =================================================
-        # FREKUENSI DOMINAN
+        # FUNGSI FREKUENSI DOMINAN
         # =================================================
-        if len(amplitude) > 1:
 
-            # Abaikan DC / 0 Hz
+        def get_dominant_peak(frequency, amplitude):
+
+            if frequency is None or amplitude is None:
+                return 0.0, 0.0
+
+            if len(amplitude) <= 1:
+                return 0.0, 0.0
+
             dominant_index = (
-                np.argmax(
-                    amplitude[1:]
-            ) + 1
-            )
-
-            dominant_frequency = (
-                frequency[dominant_index]
-            )
-
-            dominant_amplitude = (
-                amplitude[dominant_index]
-            )
-
-        else:
-
-            dominant_frequency = 0
-            dominant_amplitude = 0
-
-        # =================================================
-        # FUNGSI MENCARI PEAK
-        # =================================================
-
-        def get_harmonic_amplitude(
-            target_frequency,
-            frequency,
-            amplitude,
-            bandwidth=1.0
-        ):
-
-            if target_frequency <= 0:
-                return 0.0, 0.0
-
-            # Cari semua titik FFT di sekitar
-            # target frequency ± bandwidth
-
-            mask = (
-                np.abs(
-                    frequency - target_frequency
-                )
-                <= bandwidth
-            )
-
-            if not np.any(mask):
-                return 0.0, 0.0
-
-            local_indices = np.where(mask)[0]
-
-            # Cari peak terbesar di sekitar
-            local_index = (
-                local_indices[
-                    np.argmax(
-                        amplitude[local_indices]
-                    )
-                ]
+                np.argmax(amplitude[1:]) + 1
             )
 
             return (
-                frequency[local_index],
-                amplitude[local_index]
+                float(frequency[dominant_index]),
+                float(amplitude[dominant_index])
             )
 
         # =================================================
-        # PEAK 1X
+        # FREKUENSI DOMINAN X, Y, Z
         # =================================================
 
-        one_x_actual_frequency, one_x_amplitude = (
-            get_harmonic_amplitude(
-                one_x_frequency,
-                frequency,
-                amplitude
+        dominant_frequency_x, dominant_amplitude_x = (
+            get_dominant_peak(
+                frequency_x,
+                amplitude_x
+            )
+        )
+
+        dominant_frequency_y, dominant_amplitude_y = (
+            get_dominant_peak(
+                frequency_y,
+                amplitude_y
+            )
+        )
+
+        dominant_frequency_z, dominant_amplitude_z = (
+            get_dominant_peak(
+                frequency_z,
+                amplitude_z
             )
         )
 
         # =================================================
-        # PEAK 2X
+        # INFORMASI FFT
         # =================================================
 
-        two_x_actual_frequency, two_x_amplitude = (
-            get_harmonic_amplitude(
-                two_x_frequency,
-                frequency,
-                amplitude
-            )
-        )
-
-        # =================================================
-        # PEAK 3X
-        # =================================================
-
-        three_x_actual_frequency, three_x_amplitude = (
-            get_harmonic_amplitude(
-                three_x_frequency,
-                frequency,
-                amplitude
-            )
-        )
-        # =================================================
-        # KPI FFT
-        # =================================================
+        nyquist = sampling_frequency / 2
+        resolution_fft = sampling_frequency / sample_count
 
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
-
             st.metric(
                 "Jumlah Sampel",
                 sample_count
             )
 
         with c2:
-
             st.metric(
                 "Sampling",
                 f"{sampling_frequency:.0f} Hz"
-                )
+            )
 
         with c3:
-
             st.metric(
-            "Resolusi FFT",
-            f"{sampling_frequency / sample_count:.2f} Hz"
-        )
+                "Resolusi FFT",
+                f"{resolution_fft:.2f} Hz"
+            )
 
         with c4:
-
             st.metric(
-            "RPM",
-            f"{rpm:.0f}"
-        )
-
-
-        # =================================================
-        # HARMONIK RPM
-        # =================================================
-
-        h1, h2, h3 = st.columns(3)
-
-        with h1:
-
-            st.metric(
-                "1× RPM",
-                f"{one_x_frequency:.2f} Hz",
-                f"Peak = {one_x_actual_frequency:.2f}Hz | "
-                f"Amp = {one_x_amplitude:.2f}"
+                "Nyquist",
+                f"{nyquist:.1f} Hz"
             )
 
-        with h2:
-
-            st.metric(
-                "2× RPM",
-                f"{two_x_frequency:.2f} Hz",
-                f"Peak = {two_x_actual_frequency:.2f}Hz | "
-                f"Amp = {two_x_amplitude:.2f}"
-            )
-
-        with h3:
-
-            st.metric(
-                "3× RPM",
-                f"{three_x_frequency:.2f} Hz",
-                f"Peak = {three_x_actual_frequency:.2f}Hz | "
-                f"Amp = {three_x_amplitude:.2f}"
-            )
         # =================================================
-        # GRAFIK FFT
+        # FREKUENSI DOMINAN X, Y, Z
         # =================================================
 
-        df_fft = pd.DataFrame({
+        d1, d2, d3 = st.columns(3)
 
-            "Frequency": frequency,
+        with d1:
+            st.metric(
+                "Dominan Sumbu X",
+                f"{dominant_frequency_x:.2f} Hz",
+                f"Amplitudo: {dominant_amplitude_x:.2f}"
+            )
 
-            "Acceleration": amplitude
+        with d2:
+            st.metric(
+                "Dominan Sumbu Y",
+                f"{dominant_frequency_y:.2f} Hz",
+                f"Amplitudo: {dominant_amplitude_y:.2f}"
+            )
 
+        with d3:
+            st.metric(
+                "Dominan Sumbu Z",
+                f"{dominant_frequency_z:.2f} Hz",
+                f"Amplitudo: {dominant_amplitude_z:.2f}"
+            )
+
+        # =================================================
+        # DATA FRAME FFT X, Y, Z
+        # =================================================
+
+        df_fft_x = pd.DataFrame({
+            "Frequency": frequency_x,
+            "Acceleration": amplitude_x
         })
-        
-        # -------------------------------------------------
-        # Batasi sampai Nyquist
-        # -------------------------------------------------
 
-        nyquist = (
-            sampling_frequency / 2
-        )
+        df_fft_y = pd.DataFrame({
+            "Frequency": frequency_y,
+            "Acceleration": amplitude_y
+        })
 
-        df_fft = df_fft[
-            df_fft["Frequency"] <= nyquist
+        df_fft_z = pd.DataFrame({
+            "Frequency": frequency_z,
+            "Acceleration": amplitude_z
+        })
+
+        # =================================================
+        # BATASI FREKUENSI SAMPAI NYQUIST
+        # =================================================
+
+        df_fft_x = df_fft_x[
+            df_fft_x["Frequency"] <= nyquist
         ]
 
-        # -------------------------------------------------
-        # Grafik
-        # -------------------------------------------------
+        df_fft_y = df_fft_y[
+            df_fft_y["Frequency"] <= nyquist
+        ]
 
-        fig_fft = go.Figure()
+        df_fft_z = df_fft_z[
+            df_fft_z["Frequency"] <= nyquist
+        ]
 
-        fig_fft.add_trace(
+        # =================================================
+        # GRAFIK FFT SUMBU X
+        # =================================================
 
+        st.subheader("Spektrum FFT Sumbu X")
+
+        fig_fft_x = go.Figure()
+
+        fig_fft_x.add_trace(
             go.Scatter(
-
-                x=df_fft["Frequency"],
-
-                y=df_fft["Acceleration"],
-
+                x=df_fft_x["Frequency"],
+                y=df_fft_x["Acceleration"],
                 mode="lines",
-
-                name="Acceleration FFT"
-
+                name="FFT Sumbu X"
             )
-
         )
 
-        # -------------------------------------------------
-        # Garis 1x RPM
-        # -------------------------------------------------
-
-        if ( 
-            one_x_frequency > 0
-            and one_x_frequency <= nyquist
-        ):
-
-            fig_fft.add_trace(
-                go.Scatter(
-                x=[one_x_actual_frequency],
-                y=[one_x_amplitude],
-                mode="markers",
-                marker={
-                    "size": 12
-                },
-                name="peak 1x"
-                )
-            )
-            # -------------------------------------------------
-            # Garis 2× RPM
-            # -------------------------------------------------
-
-            if(
-                two_x_frequency > 0 
-                and two_x_frequency <= nyquist
-            ):
-                fig_fft.add_trace(
-                    go.Scatter(
-                        x=[two_x_actual_frequency],
-                        y=[two_x_amplitude],
-                        mode="markers",
-                        marker={
-                            "size": 12
-                        },
-                        name="Peak 2x"
-                    )
-                )
-            # -------------------------------------------------
-            # Garis 3× RPM
-            # -------------------------------------------------
-
-            if (
-                three_x_frequency > 0 
-                and three_x_frequency <= nyquist
-            ):
-                fig_fft.add_trace(
-                    go.Scatter(
-                        x=[three_x_actual_frequency],
-                        y=[three_x_amplitude],
-                        mode="markers",
-                        marker={
-                            "size": 12
-                        },
-                        name="Peak 3x"
-                    )
-                )
-
-            # =================================================
-            # GARIS 1X RPM
-            # =================================================
-
-            if one_x_frequency > 0:
-
-                fig_fft.add_vline(
-
-                    x=one_x_frequency,
-
-                    line_dash="dash",
-
-                    annotation_text=(
-                        f"1× = {one_x_frequency:.2f} Hz"
-                    ),
-
-                    annotation_position="top"
-
-                )
-
-
-            # =================================================
-            # GARIS 2X RPM
-            # =================================================
-
-            if (
-                two_x_frequency > 0
-                and two_x_frequency <= nyquist
-            ):
-
-                fig_fft.add_vline(
-
-                x=two_x_frequency,
-
-                line_dash="dash",
-
-                annotation_text=(
-                    f"2× = {two_x_frequency:.2f} Hz"
-                ),
-
-                annotation_position="top"
-
-        )
-
-
-            # =================================================
-            # GARIS 3X RPM
-            # =================================================
-
-            if (
-                three_x_frequency > 0
-                and three_x_frequency <= nyquist
-            ):
-
-                fig_fft.add_vline(
-
-                    x=three_x_frequency,
-
-                    line_dash="dash",
-
-                    annotation_text=(
-                        f"3× = {three_x_frequency:.2f} Hz"
-                ),
-
-                annotation_position="top"
-
-            )             
-
-    
-        # -------------------------------------------------
-        # Tandai frekuensi dominan
-        # -------------------------------------------------
-
-        fig_fft.add_trace(
-
-            go.Scatter(
-
-                x=[
-                    dominant_frequency
-                ],
-
-                y=[
-                    dominant_amplitude
-                ],
-
-                mode="markers",
-
-                marker={
-                    "size": 12
-                },
-
-                name="Dominant Frequency"
-
-            )
-
-        )
-
-        fig_fft.update_layout(
-
-            title=(
-                "Frequency Spectrum "
-                "(FFT)"
-            ),
-
-            xaxis_title=(
-                "Frequency (Hz)"
-            ),
-
-            yaxis_title=(
-                "Acceleration Amplitude (mm/s²)"
-            ),
-
+        fig_fft_x.update_layout(
+            title="FFT Getaran Sumbu X",
+            xaxis_title="Frekuensi (Hz)",
+            yaxis_title="Amplitudo Percepatan (mm/s²)",
             xaxis=dict(
-                range=[
-                    0,
-                    nyquist
-                ]
+                range=[0, nyquist]
             ),
-
             hovermode="x unified"
-
         )
 
         st.plotly_chart(
-
-            fig_fft,
-
+            fig_fft_x,
             use_container_width=True
-
         )
 
         # =================================================
-        # RAW SIGNAL
+        # GRAFIK FFT SUMBU Y
         # =================================================
 
-        st.subheader(
-            "Raw Signal D200–D699"
+        st.subheader("Spektrum FFT Sumbu Y")
+
+        fig_fft_y = go.Figure()
+
+        fig_fft_y.add_trace(
+            go.Scatter(
+                x=df_fft_y["Frequency"],
+                y=df_fft_y["Acceleration"],
+                mode="lines",
+                name="FFT Sumbu Y"
+            )
         )
+
+        fig_fft_y.update_layout(
+            title="FFT Getaran Sumbu Y",
+            xaxis_title="Frekuensi (Hz)",
+            yaxis_title="Amplitudo Percepatan (mm/s²)",
+            xaxis=dict(
+                range=[0, nyquist]
+            ),
+            hovermode="x unified"
+        )
+
+        st.plotly_chart(
+            fig_fft_y,
+            use_container_width=True
+        )
+
+        # =================================================
+        # GRAFIK FFT SUMBU Z
+        # =================================================
+
+        st.subheader("Spektrum FFT Sumbu Z")
+
+        fig_fft_z = go.Figure()
+
+        fig_fft_z.add_trace(
+            go.Scatter(
+                x=df_fft_z["Frequency"],
+                y=df_fft_z["Acceleration"],
+                mode="lines",
+                name="FFT Sumbu Z"
+            )
+        )
+
+        fig_fft_z.update_layout(
+            title="FFT Getaran Sumbu Z",
+            xaxis_title="Frekuensi (Hz)",
+            yaxis_title="Amplitudo Percepatan (mm/s²)",
+            xaxis=dict(
+                range=[0, nyquist]
+            ),
+            hovermode="x unified"
+        )
+
+        st.plotly_chart(
+            fig_fft_z,
+            use_container_width=True
+        )
+
+        # =================================================
+        # RAW SIGNAL X, Y, Z
+        # =================================================
+
+        st.subheader("Raw Signal Getaran X, Y, dan Z")
 
         waktu = (
-            np.arange(
-                len(fft_data)
-            )
+            np.arange(sample_count)
             / sampling_frequency
         )
 
         df_raw_fft = pd.DataFrame({
-
             "Time": waktu,
-
-            "D110": fft_data,
-
-            "Acceleration": fft_data_acc
-
+            "X": fft_data_acc_x,
+            "Y": fft_data_acc_y,
+            "Z": fft_data_acc_z
         })
 
         fig_raw = px.line(
-
             df_raw_fft,
-
             x="Time",
-
-            y="Acceleration",
-
-            title=(
-                "500 Sampel Data Getaran "
-            )
-
+            y=["X", "Y", "Z"],
+            title="Raw Signal Getaran X, Y, dan Z"
         )
 
         fig_raw.update_layout(
-
-            xaxis_title=(
-                "Time (s)"
-            ),
-
-            yaxis_title=(
-                "Acceleration (mm/s²)"
-            )
-
+            xaxis_title="Waktu (s)",
+            yaxis_title="Percepatan (mm/s²)"
         )
 
         st.plotly_chart(
-
             fig_raw,
-
             use_container_width=True
-
         )
 
         # =================================================
-        # INFO
+        # INFORMASI DATA FFT
         # =================================================
 
         st.caption(
-
             f"FFT ID: {fft_id} | "
             f"Data diterima: {fft_time} | "
             f"Resolusi frekuensi: "
-            f"{sampling_frequency / sample_count:.2f} Hz"
-
+            f"{resolution_fft:.2f} Hz"
         )
 # =========================================================
 # DATA UNTUK GRAFIK
@@ -1364,8 +1087,9 @@ with colg2:
     fig_vib = px.line(
         df_plot,
         x="TIME",
-        y="Vrms",
-        markers=True
+        y=["VRMSX", "VRMSY", "VRMSZ"],
+        markers=True,
+        title="Grafik Velocity RMS X, Y, dan Z"
     )
 
     fig_vib.add_hline(
