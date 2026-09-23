@@ -284,6 +284,65 @@ two_x_frequency = one_x_frequency * 2
 three_x_frequency = one_x_frequency * 3
 
 # =========================================================
+# FUNGSI PENANDA HARMONIK 1X, 2X, 3X
+# =========================================================
+
+def add_harmonic_markers(fig, one_x, two_x, three_x):
+
+    fig.add_vline(
+        x=one_x,
+        line_dash="dash",
+        line_color="cyan",
+        line_width=2
+    )
+
+    fig.add_annotation(
+        x=one_x,
+        y=1,
+        yref="paper",
+        text=f"1× = {one_x:.2f} Hz",
+        showarrow=False,
+        yshift=10,
+        font=dict(color="cyan")
+    )
+
+    fig.add_vline(
+        x=two_x,
+        line_dash="dash",
+        line_color="yellow",
+        line_width=2
+    )
+
+    fig.add_annotation(
+        x=two_x,
+        y=1,
+        yref="paper",
+        text=f"2× = {two_x:.2f} Hz",
+        showarrow=False,
+        yshift=10,
+        font=dict(color="yellow")
+    )
+
+    fig.add_vline(
+        x=three_x,
+        line_dash="dash",
+        line_color="red",
+        line_width=2
+    )
+
+    fig.add_annotation(
+        x=three_x,
+        y=1,
+        yref="paper",
+        text=f"3× = {three_x:.2f} Hz",
+        showarrow=False,
+        yshift=10,
+        font=dict(color="red")
+    )
+
+    return fig
+
+# =========================================================
 # AMBIL DATA CONTROL D310
 # =========================================================
 try:
@@ -924,6 +983,13 @@ else:
             hovermode="x unified"
         )
 
+        fig_fft_x = add_harmonic_markers(
+            fig_fft_x,
+            one_x_frequency,
+            two_x_frequency,
+            three_x_frequency
+        )
+
         st.plotly_chart(
             fig_fft_x,
             use_container_width=True
@@ -956,6 +1022,13 @@ else:
             hovermode="x unified"
         )
 
+        fig_fft_y = add_harmonic_markers(
+            fig_fft_y,
+            one_x_frequency,
+            two_x_frequency,
+            three_x_frequency
+        )
+
         st.plotly_chart(
             fig_fft_y,
             use_container_width=True
@@ -986,6 +1059,13 @@ else:
                 range=[0, nyquist]
             ),
             hovermode="x unified"
+        )
+
+        fig_fft_z = add_harmonic_markers(
+            fig_fft_z,
+            one_x_frequency,
+            two_x_frequency,
+            three_x_frequency
         )
 
         st.plotly_chart(
