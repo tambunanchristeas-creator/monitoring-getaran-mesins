@@ -815,51 +815,138 @@ else:
             sampling_frequency
         )
 
-        # =================================================
-        # FUNGSI FREKUENSI DOMINAN
+                # =================================================
+        # FUNGSI PEAK HARMONIK 1X, 2X, 3X
         # =================================================
 
-        def get_dominant_peak(frequency, amplitude):
+        def get_harmonic_peaks(
+            frequency,
+            amplitude,
+            rpm,
+            bandwidth=1.0
+        ):
 
             if frequency is None or amplitude is None:
-                return 0.0, 0.0
+                return {
+                    "1x": (0.0, 0.0),
+                    "2x": (0.0, 0.0),
+                    "3x": (0.0, 0.0)
+                }
 
             if len(amplitude) <= 1:
-                return 0.0, 0.0
+                return {
+                    "1x": (0.0, 0.0),
+                    "2x": (0.0, 0.0),
+                    "3x": (0.0, 0.0)
+                }
 
-            dominant_index = (
-                np.argmax(amplitude[1:]) + 1
-            )
+            if rpm <= 0:
+                return {
+                    "1x": (0.0, 0.0),
+                    "2x": (0.0, 0.0),
+                    "3x": (0.0, 0.0)
+                }
 
-            return (
-                float(frequency[dominant_index]),
-                float(amplitude[dominant_index])
-            )
+            # Frekuensi putaran mesin
+            one_x = rpm / 60.0
+
+            results = {}
+
+            # Cari peak 1X, 2X, dan 3X
+            for harmonic in [1, 2, 3]:
+
+                # Frekuensi teoritis harmonik
+                target_frequency = one_x * harmonic
+
+                # Area pencarian peak
+                mask = (
+                    (frequency >= target_frequency - bandwidth)
+                    &
+                    (frequency <= target_frequency + bandwidth)
+                )
+
+                # Jika tidak ada data di sekitar frekuensi target
+                if not np.any(mask):
+
+                    results[f"{harmonic}x"] = (
+                        target_frequency,
+                        0.0
+                    )
+
+                    continue
+
+                # Ambil data pada area tersebut
+                local_frequency = frequency[mask]
+
+                local_amplitude = amplitude[mask]
+
+                # Cari amplitudo terbesar
+                peak_index = np.argmax(
+                    local_amplitude
+                )
+
+                peak_frequency = float(
+                    local_frequency[peak_index]
+                )
+
+                peak_amplitude = float(
+                    local_amplitude[peak_index]
+                )
+
+                # Simpan hasil
+                results[f"{harmonic}x"] = (
+                    peak_frequency,
+                    peak_amplitude
+                )
+
+            return results
 
         # =================================================
-        # FREKUENSI DOMINAN X, Y, Z
+        # PEAK 1X, 2X, 3X SUMBU X
         # =================================================
 
-        dominant_frequency_x, dominant_amplitude_x = (
-            get_dominant_peak(
-                frequency_x,
-                amplitude_x
-            )
+        harmonic_x = get_harmonic_peaks(
+            frequency_x,
+            amplitude_x,
+            rpm,
+            bandwidth=1.0
         )
 
-        dominant_frequency_y, dominant_amplitude_y = (
-            get_dominant_peak(
-                frequency_y,
-                amplitude_y
-            )
+        freq_1x_x, amp_1x_x = harmonic_x["1x"]
+        freq_2x_x, amp_2x_x = harmonic_x["2x"]
+        freq_3x_x, amp_3x_x = harmonic_x["3x"]
+
+
+        # =================================================
+        # PEAK 1X, 2X, 3X SUMBU Y
+        # =================================================
+
+        harmonic_y = get_harmonic_peaks(
+            frequency_y,
+            amplitude_y,
+            rpm,
+            bandwidth=1.0
         )
 
-        dominant_frequency_z, dominant_amplitude_z = (
-            get_dominant_peak(
-                frequency_z,
-                amplitude_z
-            )
+        freq_1x_y, amp_1x_y = harmonic_y["1x"]
+        freq_2x_y, amp_2x_y = harmonic_y["2x"]
+        freq_3x_y, amp_3x_y = harmonic_y["3x"]
+
+
+        # =================================================
+        # PEAK 1X, 2X, 3X SUMBU Z
+        # =================================================
+
+        harmonic_z = get_harmonic_peaks(
+            frequency_z,
+            amplitude_z,
+            rpm,
+            bandwidth=1.0
         )
+
+        freq_1x_z, amp_1x_z = harmonic_z["1x"]
+        freq_2x_z, amp_2x_z = harmonic_z["2x"]
+        freq_3x_z, amp_3x_z = harmonic_z["3x"]
 
         # =================================================
         # INFORMASI FFT
@@ -895,30 +982,92 @@ else:
             )
 
         # =================================================
-        # FREKUENSI DOMINAN X, Y, Z
+        # PEAK HARMONIK SUMBU X
         # =================================================
 
-        d1, d2, d3 = st.columns(3)
+        st.subheader("Harmonik Sumbu X")
 
-        with d1:
+        x1, x2, x3 = st.columns(3)
+
+        with x1:
             st.metric(
-                "Dominan Sumbu X",
-                f"{dominant_frequency_x:.2f} Hz",
-                f"Amplitudo: {dominant_amplitude_x:.2f}"
+                "Peak 1× X",
+                f"{freq_1x_x:.2f} Hz",
+                f"Amplitudo: {amp_1x_x:.2f}"
             )
 
-        with d2:
+        with x2:
             st.metric(
-                "Dominan Sumbu Y",
-                f"{dominant_frequency_y:.2f} Hz",
-                f"Amplitudo: {dominant_amplitude_y:.2f}"
+                "Peak 2× X",
+                f"{freq_2x_x:.2f} Hz",
+                f"Amplitudo: {amp_2x_x:.2f}"
             )
 
-        with d3:
+        with x3:
             st.metric(
-                "Dominan Sumbu Z",
-                f"{dominant_frequency_z:.2f} Hz",
-                f"Amplitudo: {dominant_amplitude_z:.2f}"
+                "Peak 3× X",
+                f"{freq_3x_x:.2f} Hz",
+                f"Amplitudo: {amp_3x_x:.2f}"
+            )
+
+
+        # =================================================
+        # PEAK HARMONIK SUMBU Y
+        # =================================================
+
+        st.subheader("Harmonik Sumbu Y")
+
+        y1, y2, y3 = st.columns(3)
+
+        with y1:
+            st.metric(
+                "Peak 1× Y",
+                f"{freq_1x_y:.2f} Hz",
+                f"Amplitudo: {amp_1x_y:.2f}"
+            )
+
+        with y2:
+            st.metric(
+                "Peak 2× Y",
+                f"{freq_2x_y:.2f} Hz",
+                f"Amplitudo: {amp_2x_y:.2f}"
+            )
+
+        with y3:
+            st.metric(
+                "Peak 3× Y",
+                f"{freq_3x_y:.2f} Hz",
+                f"Amplitudo: {amp_3x_y:.2f}"
+            )
+
+
+        # =================================================
+        # PEAK HARMONIK SUMBU Z
+        # =================================================
+
+        st.subheader("Harmonik Sumbu Z")
+
+        z1, z2, z3 = st.columns(3)
+
+        with z1:
+            st.metric(
+                "Peak 1× Z",
+                f"{freq_1x_z:.2f} Hz",
+                f"Amplitudo: {amp_1x_z:.2f}"
+            )
+
+        with z2:
+            st.metric(
+                "Peak 2× Z",
+                f"{freq_2x_z:.2f} Hz",
+                f"Amplitudo: {amp_2x_z:.2f}"
+            )
+
+        with z3:
+            st.metric(
+                "Peak 3× Z",
+                f"{freq_3x_z:.2f} Hz",
+                f"Amplitudo: {amp_3x_z:.2f}"
             )
 
         # =================================================
