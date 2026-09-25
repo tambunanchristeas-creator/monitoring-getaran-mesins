@@ -538,23 +538,47 @@ with col1:
             }
         )
     )
-    fig_gauge.add_annotation(
-        x=0.5,
-        y=0.10,
+    # =====================================================
+    # INDIKATOR UNIT RPM
+    # =====================================================
+
+    # Kotak indikator hijau kecil
+    fig_gauge.add_shape(
+        type="rect",
         xref="paper",
         yref="paper",
+
+        x0=0.445,
+        x1=0.475,
+        y0=0.30,
+        y1=0.34,
+
+        fillcolor="#22c55e",
+        line=dict(
+            color="#16a34a",
+            width=1
+        )
+    )
+
+    # Tulisan RPM di samping kotak
+    fig_gauge.add_annotation(
+        x=0.485,
+        y=0.32,
+        xref="paper",
+        yref="paper",
+
         text="RPM",
+
         showarrow=False,
 
-        bgcolor="#22c55e",
-        bordercolor="#16a34a",
-        borderwidth=1,
-        borderpad=5,
-
         font=dict(
-            color="white",
-            size=14
-        )
+            color="#22c55e",
+            size=14,
+            family="Arial"
+        ),
+
+        xanchor="left",
+        yanchor="middle"
     )
 
     st.plotly_chart(
