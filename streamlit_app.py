@@ -538,13 +538,31 @@ with col1:
             }
         )
     )
+    fig_gauge.add_annotation(
+        x=0.5,
+        y=0.20,
+        xref="paper",
+        yref="paper",
+        text="RPM",
+        showarrow=False,
+
+        bgcolor="#22c55e",
+        bordercolor="#16a34a",
+        borderwidth=1,
+        borderpad=5,
+
+        font=dict(
+            color="white",
+            size=14
+        )
+    )
 
     st.plotly_chart(
         fig_gauge,
         use_container_width=True
     )
 
-    # =========================================================
+# =========================================================
 # VELOCITY RMS
 # =========================================================
 
