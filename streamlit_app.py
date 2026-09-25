@@ -540,7 +540,7 @@ with col1:
     )
     fig_gauge.add_annotation(
         x=0.5,
-        y=0.25,
+        y=0.70,
         xref="paper",
         yref="paper",
         text="RPM",
