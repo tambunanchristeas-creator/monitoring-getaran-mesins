@@ -550,12 +550,12 @@ with col1:
 
         x0=0.445,
         x1=0.475,
-        y0=0.10,
-        y1=0.15,
+        y0=0.5,
+        y1=0.10,
 
-        fillcolor="#22c55e",
+        fillcolor="#4C9F38",
         line=dict(
-            color="#16a34a",
+            color="#4C9F38",
             width=1
         )
     )
