@@ -551,7 +551,7 @@ with col1:
         x0=0.445,
         x1=0.475,
         y0=0.01,
-        y1=0.05,
+        y1=0.01,
 
         fillcolor="#4C9F38",
         line=dict(
