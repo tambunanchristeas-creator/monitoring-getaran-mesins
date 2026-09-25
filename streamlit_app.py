@@ -768,9 +768,9 @@ else:
     # Gunakan faktor ini hanya jika data_x, data_y, data_z
     # masih berupa nilai D110.
 
-    fft_data_acc_x = fft_data_x * 12.387
-    fft_data_acc_y = fft_data_y * 12.387
-    fft_data_acc_z = fft_data_z * 12.387
+    fft_data_acc_x = fft_data_x * 0.012387
+    fft_data_acc_y = fft_data_y * 0.012387
+    fft_data_acc_z = fft_data_z * 0.012387
 
     # =====================================================
     # VALIDASI DATA
