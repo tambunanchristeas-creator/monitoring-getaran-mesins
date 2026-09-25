@@ -563,7 +563,7 @@ with col1:
     # Tulisan RPM di samping kotak
     fig_gauge.add_annotation(
         x=0.485,
-        y=0.12,
+        y=0.05,
         xref="paper",
         yref="paper",
 
