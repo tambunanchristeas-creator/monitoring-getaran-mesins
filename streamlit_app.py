@@ -572,7 +572,7 @@ with col1:
         showarrow=False,
 
         font=dict(
-            color="#22c55e",
+            color="#FFFFFF",
             size=14,
             family="Arial"
         ),
