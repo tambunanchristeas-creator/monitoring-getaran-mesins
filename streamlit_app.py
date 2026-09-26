@@ -1153,7 +1153,7 @@ else:
             sampling_frequency
         )
 
-                # =================================================
+        # =================================================
         # FUNGSI PEAK HARMONIK 1X, 2X, 3X
         # =================================================
 
@@ -1185,25 +1185,34 @@ else:
                     "3x": (0.0, 0.0)
                 }
 
-            # Frekuensi putaran mesin
+    # =====================================================
+    # FREKUENSI PUTARAN MESIN
+    # =====================================================
+
             one_x = rpm / 60.0
 
             results = {}
 
-            # Cari peak 1X, 2X, dan 3X
+    # =====================================================
+    # CARI PEAK 1X, 2X, 3X
+    # =====================================================
+
             for harmonic in [1, 2, 3]:
 
-                # Frekuensi teoritis harmonik
+        # Frekuensi teoritis
                 target_frequency = one_x * harmonic
 
-                # Area pencarian peak
+        # =================================================
+        # AREA PENCARIAN
+        # =================================================
+
                 mask = (
                     (frequency >= target_frequency - bandwidth)
                     &
                     (frequency <= target_frequency + bandwidth)
                 )
 
-                # Jika tidak ada data di sekitar frekuensi target
+        # Jika tidak ada data
                 if not np.any(mask):
 
                     results[f"{harmonic}x"] = (
@@ -1213,12 +1222,43 @@ else:
 
                     continue
 
-                # Ambil data pada area tersebut
-                local_frequency = frequency[mask]
+        # =================================================
+        # AMBIL DATA LOKAL
+        # =================================================
 
+                local_frequency = frequency[mask]
                 local_amplitude = amplitude[mask]
 
-                # Cari amplitudo terbesar
+        # =================================================
+        # FILTER FREKUENSI LISTRIK 49–51 Hz
+        # =================================================
+
+                electrical_mask = (
+                    (local_frequency < 49.0)
+                    |
+                    (local_frequency > 51.0)
+                )
+
+                local_frequency = local_frequency[electrical_mask]
+                local_amplitude = local_amplitude[electrical_mask]
+
+        # =================================================
+        # JIKA SELURUH AREA TERFILTER
+        # =================================================
+
+                if len(local_amplitude) == 0:
+
+                    results[f"{harmonic}x"] = (
+                        target_frequency,
+                        0.0
+                    )
+
+                    continue
+
+        # =================================================
+        # CARI AMPLITUDO TERBESAR
+        # =================================================
+
                 peak_index = np.argmax(
                     local_amplitude
                 )
@@ -1231,7 +1271,10 @@ else:
                     local_amplitude[peak_index]
                 )
 
-                # Simpan hasil
+        # =================================================
+        # SIMPAN
+        # =================================================
+
                 results[f"{harmonic}x"] = (
                     peak_frequency,
                     peak_amplitude
