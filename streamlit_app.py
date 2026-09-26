@@ -1185,34 +1185,25 @@ else:
                     "3x": (0.0, 0.0)
                 }
 
-    # =====================================================
-    # FREKUENSI PUTARAN MESIN
-    # =====================================================
-
+            # Frekuensi putaran mesin
             one_x = rpm / 60.0
 
             results = {}
 
-    # =====================================================
-    # CARI PEAK 1X, 2X, 3X
-    # =====================================================
-
+            # Cari peak 1X, 2X, dan 3X
             for harmonic in [1, 2, 3]:
 
-        # Frekuensi teoritis
+                # Frekuensi teoritis harmonik
                 target_frequency = one_x * harmonic
 
-        # =================================================
-        # AREA PENCARIAN
-        # =================================================
-
+                # Area pencarian peak
                 mask = (
                     (frequency >= target_frequency - bandwidth)
                     &
                     (frequency <= target_frequency + bandwidth)
                 )
 
-        # Jika tidak ada data
+                # Jika tidak ada data di sekitar frekuensi target
                 if not np.any(mask):
 
                     results[f"{harmonic}x"] = (
@@ -1222,43 +1213,12 @@ else:
 
                     continue
 
-        # =================================================
-        # AMBIL DATA LOKAL
-        # =================================================
-
+                # Ambil data pada area tersebut
                 local_frequency = frequency[mask]
+
                 local_amplitude = amplitude[mask]
 
-        # =================================================
-        # FILTER FREKUENSI LISTRIK 49–51 Hz
-        # =================================================
-
-                electrical_mask = (
-                    (local_frequency < 49.0)
-                    |
-                    (local_frequency > 51.0)
-                )
-
-                local_frequency = local_frequency[electrical_mask]
-                local_amplitude = local_amplitude[electrical_mask]
-
-        # =================================================
-        # JIKA SELURUH AREA TERFILTER
-        # =================================================
-
-                if len(local_amplitude) == 0:
-
-                    results[f"{harmonic}x"] = (
-                        target_frequency,
-                        0.0
-                    )
-
-                    continue
-
-        # =================================================
-        # CARI AMPLITUDO TERBESAR
-        # =================================================
-
+                # Cari amplitudo terbesar
                 peak_index = np.argmax(
                     local_amplitude
                 )
@@ -1271,10 +1231,7 @@ else:
                     local_amplitude[peak_index]
                 )
 
-        # =================================================
-        # SIMPAN
-        # =================================================
-
+                # Simpan hasil
                 results[f"{harmonic}x"] = (
                     peak_frequency,
                     peak_amplitude
