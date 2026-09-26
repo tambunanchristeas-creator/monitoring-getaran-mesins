@@ -586,78 +586,78 @@ with col1:
         use_container_width=True
     )
 
-# =========================================================
-# VELOCITY RMS 3 SUMBU
-# =========================================================
+    # =========================================================
+    # VELOCITY RMS 3 SUMBU
+    # =========================================================
 
-with col2:
+    with col2:
 
-    st.markdown(
-        f"""
-        <div style='background:#1e293b;
-        padding:30px;
-        border-radius:10px;
-        text-align:center'>
+        st.markdown(
+            f"""
+            <div style='background:#1e293b;
+            padding:30px;
+            border-radius:10px;
+            text-align:center'>
 
-        <h2>Getaran (Velocity RMS)</h2>
+            <h2>Getaran (Velocity RMS)</h2>
 
-        <div style="
-            display:flex;
-            justify-content:space-around;
-            align-items:center;
-            margin:25px 0;
-        ">
+            <div style="
+                display:flex;
+                justify-content:space-around;
+                align-items:center;
+                margin:25px 0;
+            ">
 
-            <div>
-                <h3 style="color:#38bdf8;">Sumbu X</h3>
-                <h1>{velocity_rms_x:.2f}</h1>
-                <p style="color:#94a3b8;">mm/s</p>
+                <div>
+                    <h3 style="color:#38bdf8;">Sumbu X</h3>
+                    <h1>{velocity_rms_x:.2f}</h1>
+                    <p style="color:#94a3b8;">mm/s</p>
+                </div>
+
+                <div>
+                    <h3 style="color:#4ade80;">Sumbu Y</h3>
+                    <h1>{velocity_rms_y:.2f}</h1>
+                    <p style="color:#94a3b8;">mm/s</p>
+                </div>
+
+                <div>
+                    <h3 style="color:#facc15;">Sumbu Z</h3>
+                    <h1>{velocity_rms_z:.2f}</h1>
+                    <p style="color:#94a3b8;">mm/s</p>
+                </div>
+
             </div>
 
-            <div>
-                <h3 style="color:#4ade80;">Sumbu Y</h3>
-                <h1>{velocity_rms_y:.2f}</h1>
-                <p style="color:#94a3b8;">mm/s</p>
+            <hr style="border:1px solid #334155;">
+
+            <h3>
+            Acceleration RMS X:
+            {acceleration_rms_x:.2f} mm/s²
+            </h3>
+
+            <h3>
+            Acceleration RMS Y:
+            {acceleration_rms_y:.2f} mm/s²
+            </h3>
+
+            <h3>
+            Acceleration RMS Z:
+            {acceleration_rms_z:.2f} mm/s²
+            </h3>
+
+            <h3>
+            1× Frequency:
+            {one_x_frequency:.2f} Hz
+            </h3>
+
+            <h2>
+            Status: {status}
+            </h2>
+
             </div>
-
-            <div>
-                <h3 style="color:#facc15;">Sumbu Z</h3>
-                <h1>{velocity_rms_z:.2f}</h1>
-                <p style="color:#94a3b8;">mm/s</p>
-            </div>
-
-        </div>
-
-        <hr style="border:1px solid #334155;">
-
-        <h3>
-        Acceleration RMS X:
-        {acceleration_rms_x:.2f} mm/s²
-        </h3>
-
-        <h3>
-        Acceleration RMS Y:
-        {acceleration_rms_y:.2f} mm/s²
-        </h3>
-
-        <h3>
-        Acceleration RMS Z:
-        {acceleration_rms_z:.2f} mm/s²
-        </h3>
-
-        <h3>
-        1× Frequency:
-        {one_x_frequency:.2f} Hz
-        </h3>
-
-        <h2>
-        Status: {status}
-        </h2>
-
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+            """,
+            unsafe_allow_html=True
+        )
     # =====================================================
     # KONTROL MESIN
     # =====================================================
