@@ -587,7 +587,7 @@ with col1:
     )
 
 # =========================================================
-# VELOCITY RMS
+# VELOCITY RMS 3 SUMBU
 # =========================================================
 
 with col2:
@@ -601,20 +601,48 @@ with col2:
 
         <h2>Getaran (Velocity RMS)</h2>
 
-        <h1>
-        {velocity_rms_x:.2f} mm/s
-        </h1>
+        <div style="
+            display:flex;
+            justify-content:space-around;
+            align-items:center;
+            margin:25px 0;
+        ">
+
+            <div>
+                <h3 style="color:#38bdf8;">Sumbu X</h3>
+                <h1>{velocity_rms_x:.2f}</h1>
+                <p style="color:#94a3b8;">mm/s</p>
+            </div>
+
+            <div>
+                <h3 style="color:#4ade80;">Sumbu Y</h3>
+                <h1>{velocity_rms_y:.2f}</h1>
+                <p style="color:#94a3b8;">mm/s</p>
+            </div>
+
+            <div>
+                <h3 style="color:#facc15;">Sumbu Z</h3>
+                <h1>{velocity_rms_z:.2f}</h1>
+                <p style="color:#94a3b8;">mm/s</p>
+            </div>
+
+        </div>
+
+        <hr style="border:1px solid #334155;">
 
         <h3>
-        Acceleration RMS X: {acceleration_rms_x:.2f} mm/s²
+        Acceleration RMS X:
+        {acceleration_rms_x:.2f} mm/s²
         </h3>
 
         <h3>
-        Acceleration RMS Y: {acceleration_rms_y:.2f} mm/s²
+        Acceleration RMS Y:
+        {acceleration_rms_y:.2f} mm/s²
         </h3>
 
         <h3>
-        Acceleration RMS Z: {acceleration_rms_z:.2f} mm/s²
+        Acceleration RMS Z:
+        {acceleration_rms_z:.2f} mm/s²
         </h3>
 
         <h3>
