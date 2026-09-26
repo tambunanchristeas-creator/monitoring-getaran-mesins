@@ -635,7 +635,7 @@ with col_left:
     fig_gauge.add_annotation(
 
         x=0.485,
-        y=0.20,
+        y=0.18,
 
         xref="paper",
         yref="paper",
