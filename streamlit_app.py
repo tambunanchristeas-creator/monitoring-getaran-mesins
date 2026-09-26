@@ -676,15 +676,12 @@ with col_right:
 
     st.markdown(
         """
-        <div class="monitor-panel">
-
-            <div class="panel-title">
-                Getaran (Velocity RMS)
-            </div>
-
-        </div>
+<div class="monitor-panel">
+    <div class="panel-title">
+        Getaran (Velocity RMS)
+    </div>
+</div>
         """,
-
         unsafe_allow_html=True
     )
 
@@ -874,15 +871,10 @@ with col_right:
 
     st.markdown(
         f"""
-        <div class="frequency-box">
-
-            <b>
-                1× Frequency: {one_x_frequency:.2f} Hz
-            </b>
-
-        </div>
+    <div class="frequency-box">
+        <b>1× Frequency: {one_x_frequency:.2f} Hz</b>
+    </div>
         """,
-
         unsafe_allow_html=True
     )
 
@@ -910,17 +902,11 @@ with col_right:
 
     st.markdown(
         f"""
-        <div class="status-box">
-
-            <span>Status:</span>
-
-            <b style="color:{status_color}">
-                {status}
-            </b>
-
-        </div>
+    <div class="status-box">
+        <span>Status:</span>
+        <b style="color:{status_color}">{status}</b>
+    </div>
         """,
-
         unsafe_allow_html=True
     )
 
