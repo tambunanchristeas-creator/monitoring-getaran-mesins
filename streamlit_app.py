@@ -1491,7 +1491,7 @@ else:
         st.markdown("### 🟢 Sumbu Y")
 
         st.markdown(
-            "#### Harmonika Sumbu Y"
+            "#### Harmonik Sumbu Y"
         )
 
 
@@ -1617,7 +1617,7 @@ else:
         st.markdown("### 🟠 Sumbu Z")
 
         st.markdown(
-            "#### Harmonika Sumbu Z"
+            "#### Harmonik Sumbu Z"
         )
 
 
