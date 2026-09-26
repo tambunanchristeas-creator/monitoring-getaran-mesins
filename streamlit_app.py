@@ -1154,6 +1154,25 @@ else:
             "Acceleration": amplitude_z
         })
 
+        # =====================================================
+        # HILANGKAN FREKUENSI LISTRIK 49–51 Hz DARI GRAFIK
+        # =====================================================
+
+        df_fft_x = df_fft_x[
+            (df_fft_x["Frequency"] < 49.0) |
+            (df_fft_x["Frequency"] > 51.0)
+        ]
+
+        df_fft_y = df_fft_y[
+            (df_fft_y["Frequency"] < 49.0) |
+            (df_fft_y["Frequency"] > 51.0)
+        ]
+
+        df_fft_z = df_fft_z[
+            (df_fft_z["Frequency"] < 49.0) |
+            (df_fft_z["Frequency"] > 51.0)
+        ]
+
         # =================================================
         # BATASI FREKUENSI SAMPAI NYQUIST
         # =================================================
