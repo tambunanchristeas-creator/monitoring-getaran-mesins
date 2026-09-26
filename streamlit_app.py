@@ -621,7 +621,7 @@ with col_left:
         x1=0.475,
 
         y0=0.20,
-        y1=0.15,
+        y1=0.18,
 
         fillcolor="#4C9F38",
 
