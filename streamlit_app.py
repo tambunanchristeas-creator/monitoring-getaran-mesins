@@ -590,10 +590,10 @@ with col_left:
         height=560,
 
         margin=dict(
-            l=20,
-            r=20,
+            l=40,
+            r=80,
             t=70,
-            b=20
+            b=40
         ),
 
         paper_bgcolor="#0f172a",
