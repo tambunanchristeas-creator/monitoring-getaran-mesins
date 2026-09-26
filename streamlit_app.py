@@ -1320,95 +1320,6 @@ else:
             )
 
         # =================================================
-        # PEAK HARMONIK SUMBU X
-        # =================================================
-
-        st.subheader("Harmonik Sumbu X")
-
-        x1, x2, x3 = st.columns(3)
-
-        with x1:
-            st.metric(
-                "Peak 1× X",
-                f"{freq_1x_x:.2f} Hz",
-                f"Amplitudo: {amp_1x_x:.2f}"
-            )
-
-        with x2:
-            st.metric(
-                "Peak 2× X",
-                f"{freq_2x_x:.2f} Hz",
-                f"Amplitudo: {amp_2x_x:.2f}"
-            )
-
-        with x3:
-            st.metric(
-                "Peak 3× X",
-                f"{freq_3x_x:.2f} Hz",
-                f"Amplitudo: {amp_3x_x:.2f}"
-            )
-
-
-        # =================================================
-        # PEAK HARMONIK SUMBU Y
-        # =================================================
-
-        st.subheader("Harmonik Sumbu Y")
-
-        y1, y2, y3 = st.columns(3)
-
-        with y1:
-            st.metric(
-                "Peak 1× Y",
-                f"{freq_1x_y:.2f} Hz",
-                f"Amplitudo: {amp_1x_y:.2f}"
-            )
-
-        with y2:
-            st.metric(
-                "Peak 2× Y",
-                f"{freq_2x_y:.2f} Hz",
-                f"Amplitudo: {amp_2x_y:.2f}"
-            )
-
-        with y3:
-            st.metric(
-                "Peak 3× Y",
-                f"{freq_3x_y:.2f} Hz",
-                f"Amplitudo: {amp_3x_y:.2f}"
-            )
-
-
-        # =================================================
-        # PEAK HARMONIK SUMBU Z
-        # =================================================
-
-        st.subheader("Harmonik Sumbu Z")
-
-        z1, z2, z3 = st.columns(3)
-
-        with z1:
-            st.metric(
-                "Peak 1× Z",
-                f"{freq_1x_z:.2f} Hz",
-                f"Amplitudo: {amp_1x_z:.2f}"
-            )
-
-        with z2:
-            st.metric(
-                "Peak 2× Z",
-                f"{freq_2x_z:.2f} Hz",
-                f"Amplitudo: {amp_2x_z:.2f}"
-            )
-
-        with z3:
-            st.metric(
-                "Peak 3× Z",
-                f"{freq_3x_z:.2f} Hz",
-                f"Amplitudo: {amp_3x_z:.2f}"
-            )
-
-        # =================================================
         # DATA FRAME FFT X, Y, Z
         # =================================================
 
@@ -1427,6 +1338,7 @@ else:
             "Acceleration": amplitude_z
         })
 
+
         # =================================================
         # BATASI FREKUENSI SAMPAI NYQUIST
         # =================================================
@@ -1443,32 +1355,115 @@ else:
             df_fft_z["Frequency"] <= nyquist
         ]
 
+
         # =================================================
-        # GRAFIK FFT SUMBU X
+        # =================================================
+        #                SUMBU X
+        # =================================================
         # =================================================
 
-        st.subheader("Spektrum FFT Sumbu X")
+        st.markdown("### 🔵 Sumbu X")
+
+        st.markdown(
+            "#### Harmonik Sumbu X"
+        )
+
+
+        # -------------------------------------------------
+        # KARTU HARMONIK X
+        # -------------------------------------------------
+
+        x1, x2, x3 = st.columns(3)
+
+
+        with x1:
+
+            st.metric(
+                "Peak 1× X",
+                f"{freq_1x_x:.2f} Hz",
+                f"Amplitudo: {amp_1x_x:.2f}"
+            )
+
+
+        with x2:
+
+            st.metric(
+                "Peak 2× X",
+                f"{freq_2x_x:.2f} Hz",
+                f"Amplitudo: {amp_2x_x:.2f}"
+            )
+
+
+        with x3:
+
+            st.metric(
+                "Peak 3× X",
+                f"{freq_3x_x:.2f} Hz",
+                f"Amplitudo: {amp_3x_x:.2f}"
+            )
+
+
+        # -------------------------------------------------
+        # GRAFIK FFT X
+        # -------------------------------------------------
+
+        st.markdown(
+            "#### Spektrum FFT Sumbu X"
+        )
+
 
         fig_fft_x = go.Figure()
+
 
         fig_fft_x.add_trace(
             go.Scatter(
                 x=df_fft_x["Frequency"],
                 y=df_fft_x["Acceleration"],
                 mode="lines",
-                name="FFT Sumbu X"
+                name="FFT Sumbu X",
+                line=dict(
+                    width=1.5
+                )
             )
         )
 
+
         fig_fft_x.update_layout(
+
             title="FFT Getaran Sumbu X",
+
             xaxis_title="Frekuensi (Hz)",
+
             yaxis_title="Amplitudo Percepatan (mm/s²)",
+
             xaxis=dict(
                 range=[0, nyquist]
             ),
-            hovermode="x unified"
+
+            hovermode="x unified",
+
+            height=500,
+
+            margin=dict(
+                l=60,
+                r=30,
+                t=70,
+                b=60
+            ),
+
+            paper_bgcolor="#0f172a",
+
+            plot_bgcolor="#0b1220",
+
+            font=dict(
+                color="white"
+            ),
+
+            xaxis_gridcolor="#334155",
+
+            yaxis_gridcolor="#334155"
         )
+
 
         fig_fft_x = add_harmonic_markers(
             fig_fft_x,
@@ -1477,37 +1472,124 @@ else:
             three_x_frequency
         )
 
+
         st.plotly_chart(
             fig_fft_x,
-            use_container_width=True
+            use_container_width=True,
+            key="fft_sumbu_x"
         )
 
+
         # =================================================
-        # GRAFIK FFT SUMBU Y
+        # =================================================
+        #                SUMBU Y
+        # =================================================
         # =================================================
 
-        st.subheader("Spektrum FFT Sumbu Y")
+        st.markdown("---")
+
+        st.markdown("### 🟢 Sumbu Y")
+
+        st.markdown(
+            "#### Harmonika Sumbu Y"
+        )
+
+
+        # -------------------------------------------------
+        # KARTU HARMONIK Y
+        # -------------------------------------------------
+
+        y1, y2, y3 = st.columns(3)
+
+
+        with y1:
+
+            st.metric(
+                "Peak 1× Y",
+                f"{freq_1x_y:.2f} Hz",
+                f"Amplitudo: {amp_1x_y:.2f}"
+            )
+
+
+        with y2:
+
+            st.metric(
+                "Peak 2× Y",
+                f"{freq_2x_y:.2f} Hz",
+                f"Amplitudo: {amp_2x_y:.2f}"
+            )
+
+
+        with y3:
+
+            st.metric(
+                "Peak 3× Y",
+                f"{freq_3x_y:.2f} Hz",
+                f"Amplitudo: {amp_3x_y:.2f}"
+            )
+
+
+        # -------------------------------------------------
+        # GRAFIK FFT Y
+        # -------------------------------------------------
+
+        st.markdown(
+            "#### Spektrum FFT Sumbu Y"
+        )
+
 
         fig_fft_y = go.Figure()
+
 
         fig_fft_y.add_trace(
             go.Scatter(
                 x=df_fft_y["Frequency"],
                 y=df_fft_y["Acceleration"],
                 mode="lines",
-                name="FFT Sumbu Y"
+                name="FFT Sumbu Y",
+                line=dict(
+                    width=1.5
+                )
             )
         )
 
+
         fig_fft_y.update_layout(
+
             title="FFT Getaran Sumbu Y",
+
             xaxis_title="Frekuensi (Hz)",
+
             yaxis_title="Amplitudo Percepatan (mm/s²)",
+
             xaxis=dict(
                 range=[0, nyquist]
             ),
-            hovermode="x unified"
+
+            hovermode="x unified",
+
+            height=500,
+
+            margin=dict(
+                l=60,
+                r=30,
+                t=70,
+                b=60
+            ),
+
+            paper_bgcolor="#0f172a",
+
+            plot_bgcolor="#0b1220",
+
+            font=dict(
+                color="white"
+            ),
+
+            xaxis_gridcolor="#334155",
+
+            yaxis_gridcolor="#334155"
         )
+
 
         fig_fft_y = add_harmonic_markers(
             fig_fft_y,
@@ -1516,37 +1598,124 @@ else:
             three_x_frequency
         )
 
+
         st.plotly_chart(
             fig_fft_y,
-            use_container_width=True
+            use_container_width=True,
+            key="fft_sumbu_y"
         )
 
+
         # =================================================
-        # GRAFIK FFT SUMBU Z
+        # =================================================
+        #                SUMBU Z
+        # =================================================
         # =================================================
 
-        st.subheader("Spektrum FFT Sumbu Z")
+        st.markdown("---")
+
+        st.markdown("### 🟠 Sumbu Z")
+
+        st.markdown(
+            "#### Harmonika Sumbu Z"
+        )
+
+
+        # -------------------------------------------------
+        # KARTU HARMONIK Z
+        # -------------------------------------------------
+
+        z1, z2, z3 = st.columns(3)
+
+
+        with z1:
+
+            st.metric(
+                "Peak 1× Z",
+                f"{freq_1x_z:.2f} Hz",
+                f"Amplitudo: {amp_1x_z:.2f}"
+            )
+
+
+        with z2:
+
+            st.metric(
+                "Peak 2× Z",
+                f"{freq_2x_z:.2f} Hz",
+                f"Amplitudo: {amp_2x_z:.2f}"
+            )
+
+
+        with z3:
+
+            st.metric(
+                "Peak 3× Z",
+                f"{freq_3x_z:.2f} Hz",
+                f"Amplitudo: {amp_3x_z:.2f}"
+            )
+
+
+        # -------------------------------------------------
+        # GRAFIK FFT Z
+        # -------------------------------------------------
+
+        st.markdown(
+            "#### Spektrum FFT Sumbu Z"
+        )
+
 
         fig_fft_z = go.Figure()
+
 
         fig_fft_z.add_trace(
             go.Scatter(
                 x=df_fft_z["Frequency"],
                 y=df_fft_z["Acceleration"],
                 mode="lines",
-                name="FFT Sumbu Z"
+                name="FFT Sumbu Z",
+                line=dict(
+                    width=1.5
+                )
             )
         )
 
+
         fig_fft_z.update_layout(
+
             title="FFT Getaran Sumbu Z",
+
             xaxis_title="Frekuensi (Hz)",
+
             yaxis_title="Amplitudo Percepatan (mm/s²)",
+
             xaxis=dict(
                 range=[0, nyquist]
             ),
-            hovermode="x unified"
+
+            hovermode="x unified",
+
+            height=500,
+
+            margin=dict(
+                l=60,
+                r=30,
+                t=70,
+                b=60
+            ),
+
+            paper_bgcolor="#0f172a",
+
+            plot_bgcolor="#0b1220",
+
+            font=dict(
+                color="white"
+            ),
+
+            xaxis_gridcolor="#334155",
+
+            yaxis_gridcolor="#334155"
         )
+
 
         fig_fft_z = add_harmonic_markers(
             fig_fft_z,
@@ -1555,11 +1724,12 @@ else:
             three_x_frequency
         )
 
+
         st.plotly_chart(
             fig_fft_z,
-            use_container_width=True
+            use_container_width=True,
+            key="fft_sumbu_z"
         )
-
         # =================================================
         # RAW SIGNAL X, Y, Z
         # =================================================
