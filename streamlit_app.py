@@ -586,78 +586,81 @@ with col1:
         use_container_width=True
     )
 
-    # =========================================================
-    # VELOCITY RMS 3 SUMBU
-    # =========================================================
+# =========================================================
+# VELOCITY RMS 3 SUMBU
+# =========================================================
 
-    with col2:
+with col2:
 
-        st.markdown(
-            f"""
-            <div style='background:#1e293b;
-            padding:30px;
-            border-radius:10px;
-            text-align:center'>
+    st.markdown(
+        "## Getaran (Velocity RMS)"
+    )
 
-            <h2>Getaran (Velocity RMS)</h2>
+    # =====================================================
+    # VELOCITY RMS X Y Z
+    # =====================================================
 
-            <div style="
-                display:flex;
-                justify-content:space-around;
-                align-items:center;
-                margin:25px 0;
-            ">
+    vx, vy, vz = st.columns(3)
 
-                <div>
-                    <h3 style="color:#38bdf8;">Sumbu X</h3>
-                    <h1>{velocity_rms_x:.2f}</h1>
-                    <p style="color:#94a3b8;">mm/s</p>
-                </div>
-
-                <div>
-                    <h3 style="color:#4ade80;">Sumbu Y</h3>
-                    <h1>{velocity_rms_y:.2f}</h1>
-                    <p style="color:#94a3b8;">mm/s</p>
-                </div>
-
-                <div>
-                    <h3 style="color:#facc15;">Sumbu Z</h3>
-                    <h1>{velocity_rms_z:.2f}</h1>
-                    <p style="color:#94a3b8;">mm/s</p>
-                </div>
-
-            </div>
-
-            <hr style="border:1px solid #334155;">
-
-            <h3>
-            Acceleration RMS X:
-            {acceleration_rms_x:.2f} mm/s²
-            </h3>
-
-            <h3>
-            Acceleration RMS Y:
-            {acceleration_rms_y:.2f} mm/s²
-            </h3>
-
-            <h3>
-            Acceleration RMS Z:
-            {acceleration_rms_z:.2f} mm/s²
-            </h3>
-
-            <h3>
-            1× Frequency:
-            {one_x_frequency:.2f} Hz
-            </h3>
-
-            <h2>
-            Status: {status}
-            </h2>
-
-            </div>
-            """,
-            unsafe_allow_html=True
+    with vx:
+        st.metric(
+            "Velocity RMS X",
+            f"{velocity_rms_x:.2f} mm/s"
         )
+
+    with vy:
+        st.metric(
+            "Velocity RMS Y",
+            f"{velocity_rms_y:.2f} mm/s"
+        )
+
+    with vz:
+        st.metric(
+            "Velocity RMS Z",
+            f"{velocity_rms_z:.2f} mm/s"
+        )
+
+    st.divider()
+
+    # =====================================================
+    # ACCELERATION RMS
+    # =====================================================
+
+    st.markdown("### Acceleration RMS")
+
+    ax, ay, az = st.columns(3)
+
+    with ax:
+        st.metric(
+            "Acceleration X",
+            f"{acceleration_rms_x:.2f} mm/s²"
+        )
+
+    with ay:
+        st.metric(
+            "Acceleration Y",
+            f"{acceleration_rms_y:.2f} mm/s²"
+        )
+
+    with az:
+        st.metric(
+            "Acceleration Z",
+            f"{acceleration_rms_z:.2f} mm/s²"
+        )
+
+    # =====================================================
+    # FREKUENSI 1X
+    # =====================================================
+
+    st.markdown(
+        f"""
+        <div style="text-align:center;">
+            <h4>1× Frequency: {one_x_frequency:.2f} Hz</h4>
+            <h2>Status: {status}</h2>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
     # =====================================================
     # KONTROL MESIN
     # =====================================================
