@@ -424,14 +424,14 @@ def add_harmonic_markers(fig, one_x, two_x, three_x):
     return fig
 
 # =========================================================
-# AMBIL DATA CONTROL D310
+# AMBIL DATA CONTROL D5
 # =========================================================
 try:
 
     control_res = (
         supabase
         .table("control")
-        .select("D310")
+        .select("D5")
         .eq("id", 1)
         .limit(1)
         .execute()
@@ -440,7 +440,7 @@ try:
     if control_res.data:
 
         cmd = int(
-            control_res.data[0]["D310"]
+            control_res.data[0]["D5"]
         )
 
     else:
@@ -954,7 +954,7 @@ with col_right:
                             supabase
                             .table("control")
                             .update({
-                                "D310": 0
+                                "D5": 0
                             })
                             .eq("id", 1)
                             .execute()
@@ -1009,7 +1009,7 @@ with col_right:
                             supabase
                             .table("control")
                             .update({
-                                "D310": 1
+                                "D5": 1
                             })
                             .eq("id", 1)
                             .execute()
