@@ -857,7 +857,7 @@ else:
             sampling_frequency
         )
 
-                # =================================================
+        # =================================================
         # FUNGSI PEAK HARMONIK 1X, 2X, 3X
         # =================================================
 
@@ -922,27 +922,50 @@ else:
 
                 local_amplitude = amplitude[mask]
 
-                # Cari amplitudo terbesar
+                # =================================================
+                # ABAIKAN FREKUENSI LISTRIK 49–51 Hz
+                # =================================================
+
+                electrical_mask = (
+                    (local_frequency < 49.0) |
+                    (local_frequency > 51.0)
+                )
+
+                local_frequency = local_frequency[
+                    electrical_mask
+                ]
+
+                local_amplitude = local_amplitude[
+                    electrical_mask
+                ]
+
+                # Jika seluruh area ternyata berada di 49–51 Hz
+                if len(local_amplitude) == 0:
+
+                    results[f"{harmonic}x"] = (
+                        target_frequency,
+                        0.0
+                    )
+
+                    continue
+
+                # =================================================
+                # CARI PEAK TERBESAR
+                # =================================================
+
                 peak_index = np.argmax(
                     local_amplitude
                 )
 
-                peak_frequency = float(
-                    local_frequency[peak_index]
-                )
+                peak_frequency = float(local_frequency[peak_index])
+                peak_amplitude = float(local_amplitude[peak_index])
 
-                peak_amplitude = float(
-                    local_amplitude[peak_index]
-                )
-
-                # Simpan hasil
                 results[f"{harmonic}x"] = (
                     peak_frequency,
                     peak_amplitude
                 )
 
             return results
-
         # =================================================
         # PEAK 1X, 2X, 3X SUMBU X
         # =================================================
