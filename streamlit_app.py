@@ -30,6 +30,7 @@ st_autorefresh(
 # =========================================================
 # DARK INDUSTRIAL STYLE
 # =========================================================
+
 st.markdown("""
 <style>
 
@@ -38,19 +39,99 @@ st.markdown("""
     color: white;
 }
 
-h1, h2, h3, h4, p {
+[data-testid="stHeader"] {
+    background-color: #0f172a;
+}
+
+.block-container {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+h1, h2, h3, h4, h5, h6, p {
     color: white;
 }
 
-/* Tombol STOP */
+.monitor-panel {
+    padding: 5px 0 15px 0;
+}
+
+.panel-title {
+    font-size: 34px;
+    font-weight: 700;
+    color: white;
+}
+
+.value-label {
+    font-size: 16px;
+    color: #cbd5e1;
+    margin-bottom: 5px;
+}
+
+.value-number {
+    font-size: 31px;
+    font-weight: 400;
+    color: white;
+    white-space: nowrap;
+}
+
+.value-number span {
+    font-size: 18px;
+    color: #e2e8f0;
+}
+
+.acc-number {
+    font-size: 25px;
+    font-weight: 400;
+    color: white;
+    white-space: nowrap;
+}
+
+.acc-number span {
+    font-size: 15px;
+    color: #e2e8f0;
+}
+
+.panel-line {
+    border: none;
+    border-top: 1px solid #334155;
+    margin-top: 28px;
+    margin-bottom: 28px;
+}
+
+.section-title {
+    font-size: 25px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 20px;
+}
+
+.frequency-box {
+    text-align: center;
+    margin-top: 28px;
+    font-size: 22px;
+    color: white;
+}
+
+.status-box {
+    text-align: center;
+    margin-top: 22px;
+    font-size: 30px;
+    font-weight: 600;
+}
+
+.status-box span {
+    color: white;
+}
+
 button[kind="secondary"] {
-    background-color: red !important;
+    background-color: #ef4444 !important;
     color: white !important;
+
 }
 
 </style>
 """, unsafe_allow_html=True)
-
 
 # =========================================================
 # SUPABASE
@@ -397,107 +478,21 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 # =========================================================
-# ALARM PANEL
+# DASHBOARD UTAMA
 # =========================================================
 
-if status == "DANGER":
-
-    if cmd == 0 and rpm < 50:
-
-        st.markdown("""
-        <div style='background:red;
-        padding:20px;
-        border-radius:10px;
-        text-align:center'>
-
-        <h1>⛔ AUTO STOP AKTIF</h1>
-
-        <h3>
-        Mesin dimatikan otomatis oleh PLC
-        </h3>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-    else:
-
-        st.markdown("""
-        <div style='background:red;
-        padding:20px;
-        border-radius:10px;
-        text-align:center'>
-
-        <h1>🚨 DANGER</h1>
-
-        <h3>
-        Mesin sedang dihentikan otomatis...
-        </h3>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-
-elif status == "WARNING":
-
-    st.markdown("""
-    <div style='background:orange;
-    padding:20px;
-    border-radius:10px;
-    text-align:center'>
-
-    <h1>
-    ⚠ WARNING - PERLU PENGECEKAN ⚠
-    </h1>
-
-    </div>
-    """, unsafe_allow_html=True)
-
-
-elif status == "GOOD":
-
-    if cmd == 0:
-
-        st.markdown("""
-        <div style='background:gray;
-        padding:20px;
-        border-radius:10px;
-        text-align:center'>
-
-        <h1>⚪ MESIN OFF</h1>
-
-        <h3>
-        Mesin dimatikan manual
-        </h3>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-    else:
-
-        st.markdown("""
-        <div style='background:green;
-        padding:20px;
-        border-radius:10px;
-        text-align:center'>
-
-        <h1>🟢 RUNNING NORMAL</h1>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-
-# =========================================================
-# KPI
-# =========================================================
-col1, col2 = st.columns(2)
+col_left, col_right = st.columns(
+    [1, 1.45],
+    gap="medium"
+)
 
 
 # =========================================================
 # RPM GAUGE
 # =========================================================
-with col1:
+
+with col_left:
 
     fig_gauge = go.Figure(
         go.Indicator(
@@ -505,65 +500,143 @@ with col1:
             value=rpm,
 
             title={
-                "text": "RPM Mesin"
+                "text": "RPM Mesin",
+                "font": {
+                    "size": 22,
+                    "color": "white"
+                }
             },
 
             number={
-                "valueformat": ".0f"
+                "valueformat": ".0f",
+                "font": {
+                    "size": 64,
+                    "color": "white"
+                }
             },
 
             gauge={
 
                 "axis": {
-                    "range": [0, 2500]
+                    "range": [0, 2500],
+
+                    "tickmode": "array",
+
+                    "tickvals": [
+                        0,
+                        500,
+                        1000,
+                        1500,
+                        2000,
+                        2500
+                    ],
+
+                    "tickfont": {
+                        "color": "white",
+                        "size": 13
+                    }
                 },
+
+                "bar": {
+                    "color": "#4C9F38",
+                    "thickness": 0.25
+                },
+
+                "bgcolor": "#0f172a",
+
+                "borderwidth": 0,
 
                 "steps": [
 
                     {
                         "range": [0, 833],
-                        "color": "blue"
+                        "color": "#0000FF"
                     },
 
                     {
                         "range": [833, 1666],
-                        "color": "yellow"
+                        "color": "#3A7D20"
                     },
 
                     {
-                        "range": [1666, 2500],
-                        "color": "red"
+                        "range": [1666, 2083],
+                        "color": "#FFFF00"
+                    },
+
+                    {
+                        "range": [2083, 2500],
+                        "color": "#FF2B1A"
                     }
-                ]
+                ],
+
+                "threshold": {
+
+                    "line": {
+                        "color": "white",
+                        "width": 4
+                    },
+
+                    "thickness": 0.8,
+
+                    "value": rpm
+                }
             }
         )
     )
+
+
+    fig_gauge.update_layout(
+
+        height=560,
+
+        margin=dict(
+            l=20,
+            r=20,
+            t=70,
+            b=20
+        ),
+
+        paper_bgcolor="#0f172a",
+
+        plot_bgcolor="#0f172a",
+
+        font=dict(
+            color="white"
+        )
+    )
+
+
     # =====================================================
     # INDIKATOR UNIT RPM
     # =====================================================
 
-    # Kotak indikator hijau kecil
     fig_gauge.add_shape(
+
         type="rect",
+
         xref="paper",
         yref="paper",
 
         x0=0.445,
         x1=0.475,
+
         y0=0.01,
         y1=0.05,
 
         fillcolor="#4C9F38",
+
         line=dict(
             color="#4C9F38",
             width=1
         )
     )
 
-    # Tulisan RPM di samping kotak
+
     fig_gauge.add_annotation(
+
         x=0.485,
         y=0.025,
+
         xref="paper",
         yref="paper",
 
@@ -578,23 +651,43 @@ with col1:
         ),
 
         xanchor="left",
+
         yanchor="middle"
     )
 
+
     st.plotly_chart(
+
         fig_gauge,
-        use_container_width=True
+
+        use_container_width=True,
+
+        config={
+            "displayModeBar": False
+        }
     )
 
+
 # =========================================================
-# VELOCITY RMS 3 SUMBU
+# PANEL GETARAN
 # =========================================================
 
-with col2:
+with col_right:
 
     st.markdown(
-        "## Getaran (Velocity RMS)"
+        """
+        <div class="monitor-panel">
+
+            <div class="panel-title">
+                Getaran (Velocity RMS)
+            </div>
+
+        </div>
+        """,
+
+        unsafe_allow_html=True
     )
+
 
     # =====================================================
     # VELOCITY RMS X Y Z
@@ -602,51 +695,178 @@ with col2:
 
     vx, vy, vz = st.columns(3)
 
+
     with vx:
-        st.metric(
-            "Velocity RMS X",
-            f"{velocity_rms_x:.2f} mm/s"
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Velocity RMS X
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
+
+        st.markdown(
+            f"""
+            <div class="value-number">
+                {velocity_rms_x:.2f}
+                <span>mm/s</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
 
     with vy:
-        st.metric(
-            "Velocity RMS Y",
-            f"{velocity_rms_y:.2f} mm/s"
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Velocity RMS Y
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
+
+        st.markdown(
+            f"""
+            <div class="value-number">
+                {velocity_rms_y:.2f}
+                <span>mm/s</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
 
     with vz:
-        st.metric(
-            "Velocity RMS Z",
-            f"{velocity_rms_z:.2f} mm/s"
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Velocity RMS Z
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
 
-    st.divider()
+        st.markdown(
+            f"""
+            <div class="value-number">
+                {velocity_rms_z:.2f}
+                <span>mm/s</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
+
+    # =====================================================
+    # GARIS PEMISAH
+    # =====================================================
+
+    st.markdown(
+        "<hr class='panel-line'>",
+        unsafe_allow_html=True
+    )
+
 
     # =====================================================
     # ACCELERATION RMS
     # =====================================================
 
-    st.markdown("### Acceleration RMS")
+    st.markdown(
+        """
+        <div class="section-title">
+            Acceleration RMS
+        </div>
+        """,
+
+        unsafe_allow_html=True
+    )
+
 
     ax, ay, az = st.columns(3)
 
+
     with ax:
-        st.metric(
-            "Acceleration X",
-            f"{acceleration_rms_x:.2f} mm/s²"
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Acceleration X
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
+
+        st.markdown(
+            f"""
+            <div class="acc-number">
+                {acceleration_rms_x:.2f}
+                <span>mm/s²</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
 
     with ay:
-        st.metric(
-            "Acceleration Y",
-            f"{acceleration_rms_y:.2f} mm/s²"
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Acceleration Y
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
 
-    with az:
-        st.metric(
-            "Acceleration Z",
-            f"{acceleration_rms_z:.2f} mm/s²"
+        st.markdown(
+            f"""
+            <div class="acc-number">
+                {acceleration_rms_y:.2f}
+                <span>mm/s²</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
         )
+
+
+    with az:
+
+        st.markdown(
+            """
+            <div class="value-label">
+                Acceleration Z
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
+        st.markdown(
+            f"""
+            <div class="acc-number">
+                {acceleration_rms_z:.2f}
+                <span>mm/s²</span>
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
 
     # =====================================================
     # FREKUENSI 1X
@@ -654,13 +874,57 @@ with col2:
 
     st.markdown(
         f"""
-        <div style="text-align:center;">
-            <h4>1× Frequency: {one_x_frequency:.2f} Hz</h4>
-            <h2>Status: {status}</h2>
+        <div class="frequency-box">
+
+            <b>
+                1× Frequency: {one_x_frequency:.2f} Hz
+            </b>
+
         </div>
         """,
+
         unsafe_allow_html=True
     )
+
+
+    # =====================================================
+    # STATUS
+    # =====================================================
+
+    if status == "GOOD":
+
+        status_color = "#22c55e"
+
+    elif status == "WARNING":
+
+        status_color = "#facc15"
+
+    elif status == "DANGER":
+
+        status_color = "#ef4444"
+
+    else:
+
+        status_color = "#94a3b8"
+
+
+    st.markdown(
+        f"""
+        <div class="status-box">
+
+            <span>Status:</span>
+
+            <b style="color:{status_color}">
+                {status}
+            </b>
+
+        </div>
+        """,
+
+        unsafe_allow_html=True
+    )
+
+
     # =====================================================
     # KONTROL MESIN
     # =====================================================
@@ -671,12 +935,14 @@ with col2:
             "### ⚙️ Kontrol Mesin"
         )
 
+
         col_btn1, col_btn2 = st.columns(2)
 
 
         # =================================================
-        # STOP
+        # STOP MESIN
         # =================================================
+
         with col_btn1:
 
             if st.button(
@@ -695,6 +961,7 @@ with col2:
                         time.time()
                     )
 
+
                     try:
 
                         (
@@ -707,15 +974,18 @@ with col2:
                             .execute()
                         )
 
+
                         st.success(
                             "Perintah STOP dikirim!"
                         )
+
 
                     except Exception as e:
 
                         st.error(
                             f"Gagal: {e}"
                         )
+
 
                 else:
 
@@ -725,8 +995,9 @@ with col2:
 
 
         # =================================================
-        # RUN
+        # RUN MESIN
         # =================================================
+
         with col_btn2:
 
             if st.button(
@@ -745,6 +1016,7 @@ with col2:
                         time.time()
                     )
 
+
                     try:
 
                         (
@@ -757,9 +1029,11 @@ with col2:
                             .execute()
                         )
 
+
                         st.success(
                             "Perintah RUN dikirim!"
                         )
+
 
                     except Exception as e:
 
@@ -767,12 +1041,17 @@ with col2:
                             f"Gagal: {e}"
                         )
 
+
                 else:
 
                     st.warning(
                         "Tunggu 2 detik sebelum klik lagi"
                     )
 
+
+# =========================================================
+# PEMISAH KE FFT
+# =========================================================
 
 st.divider()
 
