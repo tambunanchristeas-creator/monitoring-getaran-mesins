@@ -1155,23 +1155,27 @@ else:
         })
 
         # =====================================================
-        # HILANGKAN FREKUENSI LISTRIK 49–51 Hz DARI GRAFIK
+        # SEMBUNYIKAN FREKUENSI LISTRIK 49–51 Hz
+        # TANPA MEMUTUS URUTAN DATA FREKUENSI
         # =====================================================
 
-        df_fft_x = df_fft_x[
-            (df_fft_x["Frequency"] < 49.0) |
-            (df_fft_x["Frequency"] > 51.0)
-        ]
+        df_fft_x.loc[
+            (df_fft_x["Frequency"] >= 49.0) &
+            (df_fft_x["Frequency"] <= 51.0),
+            "Acceleration"
+        ] = np.nan
 
-        df_fft_y = df_fft_y[
-            (df_fft_y["Frequency"] < 49.0) |
-            (df_fft_y["Frequency"] > 51.0)
-        ]
+        df_fft_y.loc[
+            (df_fft_y["Frequency"] >= 49.0) &
+            (df_fft_y["Frequency"] <= 51.0),
+            "Acceleration"
+        ] = np.nan
 
-        df_fft_z = df_fft_z[
-            (df_fft_z["Frequency"] < 49.0) |
-            (df_fft_z["Frequency"] > 51.0)
-        ]
+        df_fft_z.loc[
+            (df_fft_z["Frequency"] >= 49.0) &
+            (df_fft_z["Frequency"] <= 51.0),
+            "Acceleration"
+        ] = np.nan
 
         # =================================================
         # BATASI FREKUENSI SAMPAI NYQUIST
