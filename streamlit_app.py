@@ -1362,7 +1362,7 @@ else:
         # =================================================
         # =================================================
 
-        st.markdown("### 🔵 Sumbu X")
+        st.markdown("### 🔵 Sumbu X (RADIAL)")
 
         st.markdown(
             "#### Harmonik Sumbu X"
@@ -1488,7 +1488,7 @@ else:
 
         st.markdown("---")
 
-        st.markdown("### 🟢 Sumbu Y")
+        st.markdown("### 🟢 Sumbu Y (AXIAL)")
 
         st.markdown(
             "#### Harmonik Sumbu Y"
