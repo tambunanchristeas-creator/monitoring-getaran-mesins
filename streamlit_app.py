@@ -1086,15 +1086,6 @@ else:
         fft_data_z,
         dtype=float
     )
-    st.write("=== CEK DATA AWAL FFT ===")
-    st.write("Jumlah X:", len(fft_data_x))
-    st.write("Jumlah Y:", len(fft_data_y))
-    st.write("Jumlah Z:", len(fft_data_z))
-
-    st.write("X 10 pertama:", fft_data_x[:10])
-    st.write("Y 10 pertama:", fft_data_y[:10])
-    st.write("Z 10 pertama:", fft_data_z[:10])
-
     # =====================================================
     # KONVERSI D110 KE PERCEPATAN
     # =====================================================
