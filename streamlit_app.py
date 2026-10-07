@@ -267,7 +267,7 @@ def calculate_fft(data, sampling_frequency):
     # 3. Hanning Window
     # ==========================================
     window = np.hanning(N)
-    signal_windowed = signal * window
+    signal_windowed = filtered * window
 
     # ==========================================
     # 4. FFT
