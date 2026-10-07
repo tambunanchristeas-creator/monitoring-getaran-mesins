@@ -248,15 +248,20 @@ def calculate_fft(data, sampling_frequency):
     signal = signal - np.mean(signal)
 
     # ==========================================
-    # 2. Hilangkan trend / drift sinyal
+    # 2. HIGH-PASS FILTER
+    #    fc = 2 Hz
     # ==========================================
-    x = np.arange(N)
+    fc = 2.0
 
-    # Fit garis lurus: y = ax + b
-    p = np.polyfit(x, signal, 1)
+    alpha = 1.0 / (1.0 + 2.0 * np.pi * fc / sampling_frequency)
 
-    # Hilangkan trend
-    signal = signal - np.polyval(p, x)
+    filtered = np.zeros_like(signal)
+    filtered[0] = signal[0]
+
+    for i in range(1, N):
+        filtered[i] = alpha * (
+            filtered[i-1] + signal[i] - signal[i-1]
+        )
 
     # ==========================================
     # 3. Hanning Window
