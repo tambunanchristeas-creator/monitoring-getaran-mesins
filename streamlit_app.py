@@ -4,7 +4,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
-from scipy.signal import butter, sosfiltfilt
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
@@ -237,102 +236,41 @@ if df.empty:
     st.stop()
 
 def calculate_fft(data, sampling_frequency):
-
-    # -----------------------------------------------------
-    # Konversi ke numpy
-    # -----------------------------------------------------
-
-    signal = np.asarray(
-        data,
-        dtype=float
-    )
-
+    signal = np.asarray(data, dtype=float)
     N = len(signal)
-
-    # -----------------------------------------------------
-    # Pastikan data cukup
-    # -----------------------------------------------------
 
     if N < 4:
         return None, None
 
-    # -----------------------------------------------------
-    # Hilangkan DC / nilai rata-rata
-    # -----------------------------------------------------
-
+    # ==========================================
+    # 1. Hilangkan DC offset
+    # ==========================================
     signal = signal - np.mean(signal)
 
-    # -----------------------------------------------------
-    # HIGH-PASS FILTER 2 Hz
-    # -----------------------------------------------------
-    # Tujuan:
-    # Mengurangi drift / gangguan frekuensi sangat rendah.
-    #
-    # Tidak mengganggu 1X minimum motor:
-    # 500 RPM = 8.33 Hz
-    # -----------------------------------------------------
-
-    from scipy.signal import butter, sosfiltfilt
-
-    nyquist = sampling_frequency / 2.0
-
-    hp_cutoff = 2.0
-
-    if hp_cutoff >= nyquist:
-        return None, None
-
-    sos = butter(
-        N=4,
-        Wn=hp_cutoff,
-        btype="highpass",
-        fs=sampling_frequency,
-        output="sos"
-    )
-
-    signal = sosfiltfilt(
-        sos,
-        signal
-    )
-
-    # -----------------------------------------------------
-    # HANNING WINDOW
-    # -----------------------------------------------------
-
+    # ==========================================
+    # 2. Hanning Window
+    # ==========================================
     window = np.hanning(N)
+    signal_windowed = signal * window
 
-    signal_windowed = (
-        signal * window
-    )
-
-    # -----------------------------------------------------
-    # FFT
-    # -----------------------------------------------------
-
-    fft_result = np.fft.rfft(
-        signal_windowed
-    )
-
-    # -----------------------------------------------------
-    # FREKUENSI
-    # -----------------------------------------------------
+    # ==========================================
+    # 3. FFT
+    # ==========================================
+    fft_result = np.fft.rfft(signal_windowed)
 
     frequency = np.fft.rfftfreq(
         N,
         d=1.0 / sampling_frequency
     )
 
-    # -----------------------------------------------------
-    # MAGNITUDE
-    # -----------------------------------------------------
-
+    # ==========================================
+    # 4. Amplitude spectrum
+    # ==========================================
     amplitude = (
         2.0 / np.sum(window)
     ) * np.abs(fft_result)
 
-    # -----------------------------------------------------
     # DC dibuat 0
-    # -----------------------------------------------------
-
     amplitude[0] = 0.0
 
     return frequency, amplitude
