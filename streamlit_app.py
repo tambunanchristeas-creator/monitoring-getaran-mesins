@@ -235,25 +235,24 @@ if df.empty:
 
     st.stop()
 
-# =========================================================
-# HITUNG FFT
-# =========================================================
 def calculate_fft(data, sampling_frequency):
 
     # -----------------------------------------------------
     # Konversi ke numpy
     # -----------------------------------------------------
 
-    signal = np.array(
+    signal = np.asarray(
         data,
         dtype=float
     )
+
+    N = len(signal)
 
     # -----------------------------------------------------
     # Pastikan data cukup
     # -----------------------------------------------------
 
-    if len(signal) < 2:
+    if N < 4:
         return None, None
 
     # -----------------------------------------------------
@@ -263,15 +262,49 @@ def calculate_fft(data, sampling_frequency):
     signal = signal - np.mean(signal)
 
     # -----------------------------------------------------
-    # Hanning window
+    # HIGH-PASS FILTER 2 Hz
+    # -----------------------------------------------------
+    # Tujuan:
+    # Mengurangi drift / gangguan frekuensi sangat rendah.
+    #
+    # Tidak mengganggu 1X minimum motor:
+    # 500 RPM = 8.33 Hz
     # -----------------------------------------------------
 
-    window = np.hanning(len(signal))
+    from scipy.signal import butter, sosfiltfilt
 
-    signal_windowed = signal * window
+    nyquist = sampling_frequency / 2.0
+
+    hp_cutoff = 2.0
+
+    if hp_cutoff >= nyquist:
+        return None, None
+
+    sos = butter(
+        N=4,
+        Wn=hp_cutoff,
+        btype="highpass",
+        fs=sampling_frequency,
+        output="sos"
+    )
+
+    signal = sosfiltfilt(
+        sos,
+        signal
+    )
 
     # -----------------------------------------------------
-    # FFT real signal
+    # HANNING WINDOW
+    # -----------------------------------------------------
+
+    window = np.hanning(N)
+
+    signal_windowed = (
+        signal * window
+    )
+
+    # -----------------------------------------------------
+    # FFT
     # -----------------------------------------------------
 
     fft_result = np.fft.rfft(
@@ -279,30 +312,29 @@ def calculate_fft(data, sampling_frequency):
     )
 
     # -----------------------------------------------------
-    # Frekuensi
+    # FREKUENSI
     # -----------------------------------------------------
 
     frequency = np.fft.rfftfreq(
-        len(signal),
-        d=1 / sampling_frequency
+        N,
+        d=1.0 / sampling_frequency
     )
 
     # -----------------------------------------------------
-    # Magnitude
+    # MAGNITUDE
     # -----------------------------------------------------
 
     amplitude = (
         2.0 / np.sum(window)
     ) * np.abs(fft_result)
 
-    # DC jangan dikalikan 2
-    amplitude[0] = (
-        np.abs(fft_result[0])
-        / np.sum(window)
-    )
+    # -----------------------------------------------------
+    # DC dibuat 0
+    # -----------------------------------------------------
+
+    amplitude[0] = 0.0
 
     return frequency, amplitude
-
 # =========================================================
 # FORMAT DATA MONITORING
 # =========================================================
@@ -1247,7 +1279,7 @@ else:
             frequency_x,
             amplitude_x,
             rpm,
-            bandwidth=0.3
+            bandwidth=0.5
         )
 
         freq_1x_x, amp_1x_x = harmonic_x["1x"]
@@ -1263,7 +1295,7 @@ else:
             frequency_y,
             amplitude_y,
             rpm,
-            bandwidth=0.3
+            bandwidth=0.5
         )
 
         freq_1x_y, amp_1x_y = harmonic_y["1x"]
@@ -1279,7 +1311,7 @@ else:
             frequency_z,
             amplitude_z,
             rpm,
-            bandwidth=0.3
+            bandwidth=0.5
         )
 
         freq_1x_z, amp_1x_z = harmonic_z["1x"]
@@ -1292,6 +1324,11 @@ else:
 
         nyquist = sampling_frequency / 2
         resolution_fft = sampling_frequency / sample_count
+
+        peak_bandwidth = max(
+            0.5,
+            resolution_fft * 3
+        )
 
         c1, c2, c3, c4 = st.columns(4)
 
