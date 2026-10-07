@@ -1247,7 +1247,7 @@ else:
             frequency_x,
             amplitude_x,
             rpm,
-            bandwidth= 0.3
+            bandwidth=1.0
         )
 
         freq_1x_x, amp_1x_x = harmonic_x["1x"]
@@ -1263,7 +1263,7 @@ else:
             frequency_y,
             amplitude_y,
             rpm,
-            bandwidth=0.3
+            bandwidth=1.0
         )
 
         freq_1x_y, amp_1x_y = harmonic_y["1x"]
@@ -1279,7 +1279,7 @@ else:
             frequency_z,
             amplitude_z,
             rpm,
-            bandwidth=0.3
+            bandwidth=1.0
         )
 
         freq_1x_z, amp_1x_z = harmonic_z["1x"]
@@ -1292,20 +1292,6 @@ else:
 
         nyquist = sampling_frequency / 2
         resolution_fft = sampling_frequency / sample_count
-
-        # =================================================
-        # RENTANG FREKUENSI UNTUK TAMPILAN FFT
-        # =================================================
-
-        FFT_DISPLAY_MIN = 5.0
-
-        FFT_DISPLAY_MAX = min(
-            nyquist,
-            max(
-                50.0,
-                three_x_frequency + 5.0
-            )
-        )
 
         c1, c2, c3, c4 = st.columns(4)
 
@@ -1342,30 +1328,15 @@ else:
             "Acceleration": amplitude_x
         })
 
-        df_fft_x_display = df_fft_x[
-            (df_fft_x["Frequency"] >= FFT_DISPLAY_MIN) &
-            (df_fft_x["Frequency"] <= FFT_DISPLAY_MAX)
-        ]
-
         df_fft_y = pd.DataFrame({
             "Frequency": frequency_y,
             "Acceleration": amplitude_y
         })
 
-        df_fft_y_display = df_fft_y[
-            (df_fft_y["Frequency"] >= FFT_DISPLAY_MIN) &
-            (df_fft_y["Frequency"] <= FFT_DISPLAY_MAX)
-        ]
-
         df_fft_z = pd.DataFrame({
             "Frequency": frequency_z,
             "Acceleration": amplitude_z
         })
-
-        df_fft_z_display = df_fft_z[
-            (df_fft_z["Frequency"] >= FFT_DISPLAY_MIN) &
-            (df_fft_z["Frequency"] <= FFT_DISPLAY_MAX)
-        ]
 
 
         # =================================================
@@ -1446,8 +1417,8 @@ else:
 
         fig_fft_x.add_trace(
             go.Scatter(
-                x=df_fft_x_display["Frequency"],
-                y=df_fft_x_display["Acceleration"],
+                x=df_fft_x["Frequency"],
+                y=df_fft_x["Acceleration"],
                 mode="lines",
                 name="FFT Sumbu X",
                 line=dict(
@@ -1466,10 +1437,7 @@ else:
             yaxis_title="Amplitudo Percepatan (mm/s²)",
 
             xaxis=dict(
-                range=[
-                    FFT_DISPLAY_MIN,
-                    FFT_DISPLAY_MAX
-                ]
+                range=[0, nyquist]
             ),
 
             hovermode="x unified",
@@ -1575,8 +1543,8 @@ else:
 
         fig_fft_y.add_trace(
             go.Scatter(
-                x=df_fft_y_display["Frequency"],
-                y=df_fft_y_display["Acceleration"],
+                x=df_fft_y["Frequency"],
+                y=df_fft_y["Acceleration"],
                 mode="lines",
                 name="FFT Sumbu Y",
                 line=dict(
@@ -1595,11 +1563,9 @@ else:
             yaxis_title="Amplitudo Percepatan (mm/s²)",
 
             xaxis=dict(
-                range=[
-                    FFT_DISPLAY_MIN,
-                    FFT_DISPLAY_MAX
-                ]
+                range=[0, nyquist]
             ),
+
             hovermode="x unified",
 
             height=500,
@@ -1703,8 +1669,8 @@ else:
 
         fig_fft_z.add_trace(
             go.Scatter(
-                x=df_fft_z_display["Frequency"],
-                y=df_fft_z_display["Acceleration"],
+                x=df_fft_z["Frequency"],
+                y=df_fft_z["Acceleration"],
                 mode="lines",
                 name="FFT Sumbu Z",
                 line=dict(
@@ -1723,10 +1689,7 @@ else:
             yaxis_title="Amplitudo Percepatan (mm/s²)",
 
             xaxis=dict(
-                range=[
-                    FFT_DISPLAY_MIN,
-                    FFT_DISPLAY_MAX
-                ]
+                range=[0, nyquist]
             ),
 
             hovermode="x unified",
