@@ -4,6 +4,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import numpy as np
+from scipy.signal import butter, sosfiltfilt
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
