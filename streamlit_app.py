@@ -248,13 +248,24 @@ def calculate_fft(data, sampling_frequency):
     signal = signal - np.mean(signal)
 
     # ==========================================
-    # 2. Hanning Window
+    # 2. Hilangkan trend / drift sinyal
+    # ==========================================
+    x = np.arange(N)
+
+    # Fit garis lurus: y = ax + b
+    p = np.polyfit(x, signal, 1)
+
+    # Hilangkan trend
+    signal = signal - np.polyval(p, x)
+
+    # ==========================================
+    # 3. Hanning Window
     # ==========================================
     window = np.hanning(N)
     signal_windowed = signal * window
 
     # ==========================================
-    # 3. FFT
+    # 4. FFT
     # ==========================================
     fft_result = np.fft.rfft(signal_windowed)
 
@@ -264,13 +275,13 @@ def calculate_fft(data, sampling_frequency):
     )
 
     # ==========================================
-    # 4. Amplitude spectrum
+    # 5. Amplitude
     # ==========================================
     amplitude = (
         2.0 / np.sum(window)
     ) * np.abs(fft_result)
 
-    # DC dibuat 0
+    # Hilangkan DC
     amplitude[0] = 0.0
 
     return frequency, amplitude
