@@ -1310,7 +1310,7 @@ else:
             ts = str(fft_time)
 
         BLUE = "#1c1ccf"
-        GRID = "#3B3737"
+        GRID = "#5E5C5C"
         TXT = "#ffffff"
 
         def style_fig(fig, title, xlabel, ylabel):
@@ -1324,8 +1324,8 @@ else:
                 yaxis_title=ylabel,
                 height=330,
                 margin=dict(l=55, r=15, t=50, b=50),
-                paper_bgcolor="black",
-                plot_bgcolor="black",
+                paper_bgcolor="#3B3737",
+                plot_bgcolor="#3B3737",
                 showlegend=False,
                 hovermode="x unified",
                 font=dict(size=10, color=TXT),
