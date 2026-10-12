@@ -1309,7 +1309,7 @@ else:
         except Exception:
             ts = str(fft_time)
 
-        BLUE = "#1c1ccf"
+        BLUE = "#7E9BFC"
         GRID = "#5E5C5C"
         TXT = "#ffffff"
 
