@@ -851,21 +851,6 @@ with col_right:
             unsafe_allow_html=True
         )
 
-
-    # =====================================================
-    # FREKUENSI 1X
-    # =====================================================
-
-    st.markdown(
-        f"""
-    <div class="frequency-box">
-        <b>1× Frequency: {one_x_frequency:.2f} Hz</b>
-    </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
     # =====================================================
     # STATUS
     # =====================================================
