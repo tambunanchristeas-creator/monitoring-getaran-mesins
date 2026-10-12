@@ -1325,7 +1325,7 @@ else:
                 height=330,
                 margin=dict(l=55, r=15, t=50, b=50),
                 paper_bgcolor="#12151b",
-                plot_bgcolor="#12151b7",
+                plot_bgcolor="#12151b",
                 showlegend=False,
                 hovermode="x unified",
                 font=dict(size=10, color=TXT),
