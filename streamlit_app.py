@@ -1310,7 +1310,7 @@ else:
             ts = str(fft_time)
 
         BLUE = "#1c1ccf"
-        GRID = "#000000"
+        GRID = "#3B3737"
         TXT = "#ffffff"
 
         def style_fig(fig, title, xlabel, ylabel):
@@ -1318,7 +1318,7 @@ else:
                 title=dict(
                     text=f"<b>{title} {ts}</b>",
                     x=0.0, xanchor="left",
-                    font=dict(size=13, color="#222")
+                    font=dict(size=13, color="#ffffff")
                 ),
                 xaxis_title=xlabel,
                 yaxis_title=ylabel,
