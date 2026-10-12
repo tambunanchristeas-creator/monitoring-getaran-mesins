@@ -1310,8 +1310,8 @@ else:
             ts = str(fft_time)
 
         BLUE = "#1c1ccf"
-        GRID = "#e5e7eb"
-        TXT = "#6b7280"
+        GRID = "#000000"
+        TXT = "#ffffff"
 
         def style_fig(fig, title, xlabel, ylabel):
             fig.update_layout(
