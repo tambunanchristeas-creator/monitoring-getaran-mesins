@@ -665,7 +665,7 @@ with col_right:
         """
 <div class="monitor-panel">
     <div class="panel-title">
-        Getaran (Velocity RMS)
+        Velocity RMS
     </div>
 </div>
         """,
