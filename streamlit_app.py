@@ -1370,9 +1370,29 @@ else:
                 "Amplitudo (mm/s²)"
             )
             fig.update_xaxes(range=[0, nyquist])
-            fig.update_yaxes(rangemode="tozero")
-            return fig
+        # Batas tetap sumbu Y grafik FFT
+        FFT_Y_MAX = 50
 
+        def fig_fft(f, a, nama_sumbu, arah):
+            fig = go.Figure(
+                go.Scatter(
+                    x=f, y=a, mode="lines",
+                    line=dict(color=BLUE, width=1)
+                )
+            )
+            fig = style_fig(
+                fig,
+                f"Domain Frekuensi {nama_sumbu} ({arah})",
+                "Frekuensi (Hz)",
+                "Amplitudo (mm/s²)"
+            )
+            fig.update_xaxes(range=[0, nyquist])
+            fig.update_yaxes(
+                range=[0, FFT_Y_MAX],
+                autorange=False,
+                fixedrange=True
+            )
+            return fig
         # Sinyal domain waktu: buang DC offset agar berpusat di 0
         waktu = np.arange(sample_count) / sampling_frequency
 
