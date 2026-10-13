@@ -7,6 +7,7 @@ import numpy as np
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
+from scipy import signal as sp_signal
 
 
 # =========================================================
@@ -152,6 +153,75 @@ supabase = create_client(
 if "last_click" not in st.session_state:
     st.session_state.last_click = 0
 
+# =========================================================
+# PENGATURAN FILTER (SIDEBAR)
+# =========================================================
+st.sidebar.header("🎛️ Pengaturan Filter")
+
+filter_type = st.sidebar.selectbox(
+    "Jenis filter",
+    ["Tanpa Filter", "High-Pass", "Low-Pass", "Band-Pass"],
+    index=1
+)
+
+filter_order = st.sidebar.slider("Orde filter", 1, 8, 4)
+
+f_low = 2.0
+f_high = 100.0
+
+if filter_type == "High-Pass":
+    f_low = st.sidebar.number_input(
+        "Cutoff High-Pass (Hz)", 0.1, 1000.0, 2.0, step=0.5
+    )
+
+elif filter_type == "Low-Pass":
+    f_high = st.sidebar.number_input(
+        "Cutoff Low-Pass (Hz)", 1.0, 2000.0, 100.0, step=5.0
+    )
+
+elif filter_type == "Band-Pass":
+    f_low = st.sidebar.number_input(
+        "Frekuensi bawah (Hz)", 0.1, 1000.0, 2.0, step=0.5
+    )
+    f_high = st.sidebar.number_input(
+        "Frekuensi atas (Hz)", 1.0, 2000.0, 100.0, step=5.0
+    )
+
+
+def apply_filter(data, fs, ftype, order, low, high):
+    """Butterworth zero-phase filter. Jika setting tidak valid,
+    sinyal dikembalikan tanpa difilter."""
+
+    x = np.asarray(data, dtype=float)
+
+    if ftype == "Tanpa Filter" or len(x) < 16 or fs <= 0:
+        return x
+
+    nyq = fs / 2.0
+
+    if ftype == "High-Pass":
+        wn, btype = low / nyq, "highpass"
+
+    elif ftype == "Low-Pass":
+        wn, btype = high / nyq, "lowpass"
+
+    elif ftype == "Band-Pass":
+        if low >= high:
+            return x
+        wn, btype = [low / nyq, high / nyq], "bandpass"
+
+    else:
+        return x
+
+    # Cutoff harus berada di antara 0 dan Nyquist
+    if np.any(np.asarray(wn) <= 0) or np.any(np.asarray(wn) >= 1):
+        return x
+
+    try:
+        sos = sp_signal.butter(order, wn, btype=btype, output="sos")
+        return sp_signal.sosfiltfilt(sos, x)
+    except Exception:
+        return x
 
 # =========================================================
 # LOAD DATA MONITORING
@@ -242,51 +312,29 @@ def calculate_fft(data, sampling_frequency):
     if N < 4:
         return None, None
 
-    # ==========================================
     # 1. Hilangkan DC offset
-    # ==========================================
     signal = signal - np.mean(signal)
 
-    # ==========================================
-    # 2. HIGH-PASS FILTER
-    #    fc = 2 Hz
-    # ==========================================
-    fc = 2.0
+    # 2. FILTER (sesuai pilihan di sidebar)
+    filtered = apply_filter(
+        signal,
+        sampling_frequency,
+        filter_type,
+        filter_order,
+        f_low,
+        f_high
+    )
 
-    alpha = 1.0 / (1.0 + 2.0 * np.pi * fc / sampling_frequency)
-
-    filtered = np.zeros_like(signal)
-    filtered[0] = signal[0]
-
-    for i in range(1, N):
-        filtered[i] = alpha * (
-            filtered[i-1] + signal[i] - signal[i-1]
-        )
-
-    # ==========================================
-    # 3. Hanning Window
-    # ==========================================
+    # 3. Hanning window
     window = np.hanning(N)
     signal_windowed = filtered * window
 
-    # ==========================================
     # 4. FFT
-    # ==========================================
     fft_result = np.fft.rfft(signal_windowed)
+    frequency = np.fft.rfftfreq(N, d=1.0 / sampling_frequency)
 
-    frequency = np.fft.rfftfreq(
-        N,
-        d=1.0 / sampling_frequency
-    )
-
-    # ==========================================
-    # 5. Amplitude
-    # ==========================================
-    amplitude = (
-        2.0 / np.sum(window)
-    ) * np.abs(fft_result)
-
-    # Hilangkan DC
+    # 5. Amplitudo
+    amplitude = (2.0 / np.sum(window)) * np.abs(fft_result)
     amplitude[0] = 0.0
 
     return frequency, amplitude
@@ -1397,9 +1445,18 @@ else:
         # Sinyal domain waktu: buang DC offset agar berpusat di 0
         waktu = np.arange(sample_count) / sampling_frequency
 
-        sig_x = fft_data_acc_x - np.mean(fft_data_acc_x)
-        sig_y = fft_data_acc_y - np.mean(fft_data_acc_y)
-        sig_z = fft_data_acc_z - np.mean(fft_data_acc_z)
+        sig_x = apply_filter(
+            fft_data_acc_x - np.mean(fft_data_acc_x),
+            sampling_frequency * 2, filter_type, filter_order, f_low, f_high
+        )
+        sig_y = apply_filter(
+            fft_data_acc_y - np.mean(fft_data_acc_y),
+            sampling_frequency * 2, filter_type, filter_order, f_low, f_high
+        )
+        sig_z = apply_filter(
+            fft_data_acc_z - np.mean(fft_data_acc_z),
+            sampling_frequency, filter_type, filter_order, f_low, f_high
+        )
 
         # Data FFT (sudah dibatasi sampai Nyquist di df_fft_*)
         PLOT_CFG = {"displayModeBar": False}
