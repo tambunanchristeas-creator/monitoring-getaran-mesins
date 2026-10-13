@@ -1266,7 +1266,7 @@ else:
             frequency_x,
             amplitude_x,
             rpm,
-            bandwidth=0.5
+            bandwidth=1.0
         )
 
         freq_1x_x, amp_1x_x = harmonic_x["1x"]
@@ -1282,7 +1282,7 @@ else:
             frequency_y,
             amplitude_y,
             rpm,
-            bandwidth=0.5
+            bandwidth=1.0
         )
 
         freq_1x_y, amp_1x_y = harmonic_y["1x"]
@@ -1298,7 +1298,7 @@ else:
             frequency_z,
             amplitude_z,
             rpm,
-            bandwidth=0.5
+            bandwidth=1.0
         )
 
         freq_1x_z, amp_1x_z = harmonic_z["1x"]
