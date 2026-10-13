@@ -1111,12 +1111,12 @@ else:
 
         frequency_x, amplitude_x = calculate_fft(
             fft_data_acc_x,
-            sampling_frequency
+            sampling_frequency *2
         )
 
         frequency_y, amplitude_y = calculate_fft(
             fft_data_acc_y,
-            sampling_frequency
+            sampling_frequency *2
         )
 
         frequency_z, amplitude_z = calculate_fft(
