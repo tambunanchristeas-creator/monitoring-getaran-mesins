@@ -1299,6 +1299,28 @@ else:
         df_fft_y = df_fft_y[df_fft_y["Frequency"] <= nyquist]
         df_fft_z = df_fft_z[df_fft_z["Frequency"] <= nyquist]
 
+                # DIAGNOSA: 5 puncak tertinggi tiap sumbu + RMS sinyal
+        def top_peaks(f, a, n=5, fmin=3.0):
+            f = np.asarray(f); a = np.asarray(a)
+            m = f >= fmin
+            f, a = f[m], a[m]
+            idx = np.argsort(a)[-n:][::-1]
+            return [(round(float(f[i]), 2), round(float(a[i]), 2)) for i in idx]
+
+        st.write("1× teoritis:", round(one_x_frequency, 2), "Hz")
+        st.write("Puncak X:", top_peaks(frequency_x, amplitude_x))
+        st.write("Puncak Y:", top_peaks(frequency_y, amplitude_y))
+        st.write("Puncak Z:", top_peaks(frequency_z, amplitude_z))
+
+        st.write(
+            "RMS sinyal X/Y/Z:",
+            round(float(np.sqrt(np.mean((fft_data_acc_x - fft_data_acc_x.mean())**2))), 2),
+            round(float(np.sqrt(np.mean((fft_data_acc_y - fft_data_acc_y.mean())**2))), 2),
+            round(float(np.sqrt(np.mean((fft_data_acc_z - fft_data_acc_z.mean())**2))), 2),
+            "| ARMS dashboard:",
+            round(acceleration_rms_x, 2), round(acceleration_rms_y, 2), round(acceleration_rms_z, 2),
+        )
+
         # =================================================
         # TAMPILAN GRAFIK: GRID 2 BARIS x 3 KOLOM
         # =================================================
