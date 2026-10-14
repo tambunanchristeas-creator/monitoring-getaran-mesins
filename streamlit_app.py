@@ -1420,7 +1420,7 @@ else:
             )
             fig.update_xaxes(range=[0, nyquist])
         # Batas tetap sumbu Y grafik FFT
-        FFT_Y_MAX = 0.05
+        FFT_Y_MAX = 0.10
 
         def fig_fft(f, a, nama_sumbu, arah):
             fig = go.Figure(
