@@ -1446,7 +1446,7 @@ else:
                 y_max = 1.0
                 
             fig.update_yaxes(
-                range=[0, FFT_Y_MAX * 1.1],
+                range=[0, y_max * 1.1],
                 autorange=False,
                 fixedrange=True
             )
