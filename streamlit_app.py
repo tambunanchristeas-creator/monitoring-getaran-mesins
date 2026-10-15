@@ -1442,7 +1442,7 @@ else:
             )
             fig.update_yaxes(
                 range=[0, FFT_Y_MAX],
-                autorange=False,
+                autorange=True,
                 fixedrange=True
             )
             return fig
