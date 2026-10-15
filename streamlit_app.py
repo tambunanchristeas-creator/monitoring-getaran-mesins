@@ -1440,8 +1440,13 @@ else:
                 tick0=0,
                 dtick=25
             )
+            # Sumbu Y mengikuti nilai tertinggi (+10% ruang di atas puncak)
+            y_max = float(np.max(a)) if len(a) > 0 else 1.0
+            if y_max <= 0:
+                y_max = 1.0
+                
             fig.update_yaxes(
-                range=[0, FFT_Y_MAX],
+                range=[0, FFT_Y_MAX * 1.1],
                 autorange=False,
                 fixedrange=True
             )
