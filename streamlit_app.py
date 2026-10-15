@@ -1440,11 +1440,6 @@ else:
                 tick0=0,
                 dtick=25
             )
-            fig.update_yaxes(
-                range=[0, FFT_Y_MAX],
-                autorange=False,
-                fixedrange=True
-            )
             return fig
         # Sinyal domain waktu: buang DC offset agar berpusat di 0
         waktu = np.arange(sample_count) / sampling_frequency
