@@ -1425,12 +1425,8 @@ else:
             )
 
             # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
-            y_max = float(np.max(a)) if len(a) > 0 else 1.0
-            if y_max <= 0:
-                y_max = 1.0
-
             fig.update_yaxes(
-                range=[0, y_max * 1.1],
+                range=[0, FFT_Y_MAX],
                 autorange=False,
                 fixedrange=True
             )
@@ -1475,6 +1471,11 @@ else:
                 use_container_width=True, theme=None,
                 config=PLOT_CFG, key="time_z"
             )
+        FFT_Y_MAX = 1.1 * max(
+            df_fft_x["Acceleration"].max(),
+            df_fft_y["Acceleration"].max(),
+            df_fft_z["Acceleration"].max()
+        )
 
         # ---------- BARIS 2: DOMAIN FREKUENSI ----------
         f1, f2, f3 = st.columns(3)
