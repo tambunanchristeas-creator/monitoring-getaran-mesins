@@ -1418,30 +1418,19 @@ else:
                 "Frekuensi (Hz)",
                 "Amplitudo (mm/s²)"
             )
-            fig.update_xaxes(range=[0, nyquist])
-        # Batas tetap sumbu Y grafik FFT
-        
-
-        def fig_fft(f, a, nama_sumbu, arah):
-            fig = go.Figure(
-                go.Scatter(
-                    x=f, y=a, mode="lines",
-                    line=dict(color=BLUE, width=1)
-                )
-            )
-            fig = style_fig(
-                fig,
-                f"Domain Frekuensi {nama_sumbu} ({arah})",
-                "Frekuensi (Hz)",
-                "Amplitudo (mm/s²)"
-            )
             fig.update_xaxes(
                 range=[0, nyquist],
                 tick0=0,
                 dtick=25
             )
+
+            # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
+            y_max = float(np.max(a)) if len(a) > 0 else 1.0
+            if y_max <= 0:
+                y_max = 1.0
+
             fig.update_yaxes(
-                range=[0, df_fft_y],
+                range=[0, y_max * 1.1],
                 autorange=False,
                 fixedrange=True
             )
