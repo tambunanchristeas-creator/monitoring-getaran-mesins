@@ -1420,7 +1420,7 @@ else:
             )
             fig.update_xaxes(range=[0, nyquist])
         # Batas tetap sumbu Y grafik FFT
-        FFT_Y_MAX = 1000
+        
 
         def fig_fft(f, a, nama_sumbu, arah):
             fig = go.Figure(
@@ -1441,7 +1441,7 @@ else:
                 dtick=25
             )
             fig.update_yaxes(
-                range=[0, FFT_Y_MAX],
+                range=[0, df_fft_y],
                 autorange=False,
                 fixedrange=True
             )
