@@ -1436,11 +1436,11 @@ else:
 
         sig_x = apply_filter(
             fft_data_acc_x - np.mean(fft_data_acc_x),
-            sampling_frequency * 2, filter_type, filter_order, f_low, f_high
+            sampling_frequency , filter_type, filter_order, f_low, f_high
         )
         sig_y = apply_filter(
             fft_data_acc_y - np.mean(fft_data_acc_y),
-            sampling_frequency * 2, filter_type, filter_order, f_low, f_high
+            sampling_frequency , filter_type, filter_order, f_low, f_high
         )
         sig_z = apply_filter(
             fft_data_acc_z - np.mean(fft_data_acc_z),
