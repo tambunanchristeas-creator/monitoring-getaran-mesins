@@ -1421,7 +1421,7 @@ else:
             fig.update_xaxes(
                 range=[0, nyquist],
                 tick0=0,
-                dtick=5
+                dtick=10
             )
 
             # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
