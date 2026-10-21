@@ -1426,7 +1426,7 @@ else:
 
             # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
             fig.update_yaxes(
-                range=[0, FFT_Y_MAX],
+                range=[0, 2],
                 autorange=False,
                 fixedrange=True
             )
