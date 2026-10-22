@@ -754,7 +754,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Velocity RMS X
+                Velocity RMS Radial (x)
             </div>
             """,
 
@@ -778,7 +778,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Velocity RMS Y
+                Velocity RMS Axial (Y)
             </div>
             """,
 
@@ -802,7 +802,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Velocity RMS Z
+                Velocity RMS Radial (Z)
             </div>
             """,
 
@@ -854,7 +854,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Acceleration X
+                Acceleration Radial (X)
             </div>
             """,
 
@@ -878,7 +878,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Acceleration Y
+                Acceleration Axial (Y)
             </div>
             """,
 
@@ -902,7 +902,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Acceleration Z
+                Acceleration Axial (Z)
             </div>
             """,
 
