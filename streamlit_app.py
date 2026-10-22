@@ -198,7 +198,7 @@ fft_y_auto = st.sidebar.checkbox(
 )
 
 fft_y_manual = st.sidebar.number_input(
-    "Batas maksimal sumbu Y FFT (m/s²)",
+    "Batas maksimal sumbu Y FFT (mm/s²)",
     min_value=0.001,
     max_value=1000.0,
     value=1.0,
@@ -1421,7 +1421,7 @@ else:
                 fig,
                 f"Domain Waktu {nama_sumbu} ({arah})",
                 "Waktu (detik)",
-                "Amplitudo (m/s²)"
+                "Amplitudo (mm/s²)"
             )
             fig.update_xaxes(range=[0, t[-1]])
             return fig
@@ -1437,7 +1437,7 @@ else:
                 fig,
                 f"Domain Frekuensi {nama_sumbu} ({arah})",
                 "Frekuensi (Hz)",
-                "Amplitudo (m/s²)"
+                "Amplitudo (mm/s²)"
             )
             fig.update_xaxes(
                 range=[0, nyquist],
