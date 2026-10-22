@@ -188,6 +188,27 @@ elif filter_type == "Band-Pass":
     )
 
 
+# ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
+st.sidebar.header("📈 Grafik FFT")
+
+fft_y_auto = st.sidebar.checkbox(
+    "Batas Y otomatis",
+    value=False,
+    key="fft_y_auto"
+)
+
+fft_y_manual = st.sidebar.number_input(
+    "Batas maksimal sumbu Y FFT (m/s²)",
+    min_value=0.001,
+    max_value=1000.0,
+    value=1.0,
+    step=0.1,
+    format="%.3f",
+    disabled=fft_y_auto,
+    key="fft_y_manual"
+)
+
+
 def apply_filter(data, fs, ftype, order, low, high):
     """Butterworth zero-phase filter. Jika setting tidak valid,
     sinyal dikembalikan tanpa difilter."""
@@ -1120,11 +1141,10 @@ else:
         dtype=float
     )
     # =====================================================
-    # DATA FFT DARI PLC (REV5) SUDAH DALAM mm/s2
+    # DATA FFT DARI PLC (REV5) DALAM mm/s2 -> DIJADIKAN m/s2
     # =====================================================
-    # PLC sudah mengonversi ADC -> percepatan, jadi tidak perlu
-    # faktor skala lagi. Ubah FFT_SCALE hanya jika perlu.
-    FFT_SCALE = 1.0
+    # Grafik waktu dan FFT ditampilkan dalam m/s2 (1 m/s2 = 1000 mm/s2)
+    FFT_SCALE = 0.001
 
     fft_data_acc_x = fft_data_x * FFT_SCALE
     fft_data_acc_y = fft_data_y * FFT_SCALE
@@ -1333,15 +1353,15 @@ else:
 
         df_fft_x = pd.DataFrame({
             "Frequency": frequency_x,
-            "Acceleration": amplitude_x / 1000.0   # mm/s2 -> m/s2
+            "Acceleration": amplitude_x
         })
         df_fft_y = pd.DataFrame({
             "Frequency": frequency_y,
-            "Acceleration": amplitude_y / 1000.0   # mm/s2 -> m/s2
+            "Acceleration": amplitude_y
         })
         df_fft_z = pd.DataFrame({
             "Frequency": frequency_z,
-            "Acceleration": amplitude_z / 1000.0   # mm/s2 -> m/s2
+            "Acceleration": amplitude_z
         })
 
         df_fft_x = df_fft_x[df_fft_x["Frequency"] <= nyquist]
@@ -1401,7 +1421,7 @@ else:
                 fig,
                 f"Domain Waktu {nama_sumbu} ({arah})",
                 "Waktu (detik)",
-                "Amplitudo (mm/s²)"
+                "Amplitudo (m/s²)"
             )
             fig.update_xaxes(range=[0, t[-1]])
             return fig
@@ -1425,9 +1445,10 @@ else:
                 dtick=10
             )
 
-            # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
+            # Batas sumbu Y: manual dari sidebar, atau otomatis mengikuti puncak
+            y_top = max(FFT_Y_MAX, 0.001) if fft_y_auto else fft_y_manual
             fig.update_yaxes(
-                range=[0, max(FFT_Y_MAX, 0.01)],
+                range=[0, y_top],
                 autorange=False,
                 fixedrange=True
             )
