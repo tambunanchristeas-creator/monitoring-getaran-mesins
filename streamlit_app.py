@@ -1120,14 +1120,15 @@ else:
         dtype=float
     )
     # =====================================================
-    # KONVERSI D110 KE PERCEPATAN
+    # DATA FFT DARI PLC (REV5) SUDAH DALAM mm/s2
     # =====================================================
-    # Gunakan faktor ini hanya jika data_x, data_y, data_z
-    # masih berupa nilai D110.
+    # PLC sudah mengonversi ADC -> percepatan, jadi tidak perlu
+    # faktor skala lagi. Ubah FFT_SCALE hanya jika perlu.
+    FFT_SCALE = 1.0
 
-    fft_data_acc_x = fft_data_x * 0.012387
-    fft_data_acc_y = fft_data_y * 0.012387
-    fft_data_acc_z = fft_data_z * 0.012387
+    fft_data_acc_x = fft_data_x * FFT_SCALE
+    fft_data_acc_y = fft_data_y * FFT_SCALE
+    fft_data_acc_z = fft_data_z * FFT_SCALE
 
     # =====================================================
     # VALIDASI DATA
@@ -1426,7 +1427,7 @@ else:
 
             # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
             fig.update_yaxes(
-                range=[0, 10],
+                range=[0, max(FFT_Y_MAX, 1.0)],
                 autorange=False,
                 fixedrange=True
             )
