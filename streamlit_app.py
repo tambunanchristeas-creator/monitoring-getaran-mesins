@@ -754,7 +754,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Velocity RMS Radial (x)
+                Velocity RMS Radial (X)
             </div>
             """,
 
