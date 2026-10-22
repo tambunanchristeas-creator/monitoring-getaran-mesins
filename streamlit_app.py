@@ -1333,15 +1333,15 @@ else:
 
         df_fft_x = pd.DataFrame({
             "Frequency": frequency_x,
-            "Acceleration": amplitude_x
+            "Acceleration": amplitude_x / 1000.0   # mm/s2 -> m/s2
         })
         df_fft_y = pd.DataFrame({
             "Frequency": frequency_y,
-            "Acceleration": amplitude_y
+            "Acceleration": amplitude_y / 1000.0   # mm/s2 -> m/s2
         })
         df_fft_z = pd.DataFrame({
             "Frequency": frequency_z,
-            "Acceleration": amplitude_z
+            "Acceleration": amplitude_z / 1000.0   # mm/s2 -> m/s2
         })
 
         df_fft_x = df_fft_x[df_fft_x["Frequency"] <= nyquist]
@@ -1417,7 +1417,7 @@ else:
                 fig,
                 f"Domain Frekuensi {nama_sumbu} ({arah})",
                 "Frekuensi (Hz)",
-                "Amplitudo (mm/s²)"
+                "Amplitudo (m/s²)"
             )
             fig.update_xaxes(
                 range=[0, nyquist],
@@ -1427,7 +1427,7 @@ else:
 
             # Sumbu Y mengikuti puncak tertinggi (+10% ruang di atas)
             fig.update_yaxes(
-                range=[0, max(FFT_Y_MAX, 1.0)],
+                range=[0, max(FFT_Y_MAX, 0.01)],
                 autorange=False,
                 fixedrange=True
             )
