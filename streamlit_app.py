@@ -902,7 +902,7 @@ with col_right:
         st.markdown(
             """
             <div class="value-label">
-                Acceleration Axial (Z)
+                Acceleration Radial (Z)
             </div>
             """,
 
