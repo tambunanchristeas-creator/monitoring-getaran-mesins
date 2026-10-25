@@ -1437,7 +1437,7 @@ else:
                 fig,
                 f"Domain Frekuensi {nama_sumbu} ({arah})",
                 "Frekuensi (Hz)",
-                "Amplitudo (mm/s²)"
+                "Magnitudo (mm/s²)"
             )
             fig.update_xaxes(
                 range=[0, nyquist],
