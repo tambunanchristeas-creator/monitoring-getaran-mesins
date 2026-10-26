@@ -407,9 +407,9 @@ velocity_rms_x = float(latest["VRMSX"])
 velocity_rms_y = float(latest["VRMSY"])
 velocity_rms_z = float(latest["VRMSZ"])
 
-acceleration_rms_x = float(latest["ARMSX"])
-acceleration_rms_y = float(latest["ARMSY"])
-acceleration_rms_z = float(latest["ARMSZ"])
+acceleration_rms_x = float(latest["ARMSX"] / 1000.0)
+acceleration_rms_y = float(latest["ARMSY"] / 1000.0)
+acceleration_rms_z = float(latest["ARMSZ"] / 1000.0)
 status = latest["STATUS"]
 
 # =========================================================
