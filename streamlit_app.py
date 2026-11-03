@@ -1154,13 +1154,18 @@ else:
     # VALIDASI DATA
     # =====================================================
 
-    # Jumlah titik FFT = data yang benar-benar diterima (berapa pun jumlahnya).
-    # sample_count (D82) hanya informasi jumlah sampel per 10 detik, bukan panjang array.
+    # Jumlah titik FFT = sample_count (D82), berapa pun nilainya.
+    # Maka resolusi FFT = sampling_frequency / sample_count, dan jarak antar
+    # titik pada grafik FFT sama dengan resolusi tersebut.
+    # (Jika data yang diterima lebih sedikit dari sample_count, dipakai yang ada.)
     n_fft = min(
         len(fft_data_acc_x),
         len(fft_data_acc_y),
         len(fft_data_acc_z)
     )
+
+    if sample_count >= 4:
+        n_fft = min(n_fft, sample_count)
 
     fft_data_acc_x = fft_data_acc_x[:n_fft]
     fft_data_acc_y = fft_data_acc_y[:n_fft]
