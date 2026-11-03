@@ -1338,7 +1338,7 @@ else:
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
-            st.metric("Jumlah Titik FFT", n_fft)
+            st.metric("Jumlah Sampel", sample_count)
 
         with c2:
             st.metric("Sampling", f"{sampling_frequency:.0f} Hz")
@@ -1529,7 +1529,7 @@ else:
         st.caption(
             f"FFT ID: {fft_id} | "
             f"Data diterima: {fft_time} | "
-            f"Sampel per 10 dtk (D82): {sample_count} | "
+            f"Titik data FFT: {n_fft} | "
             f"Resolusi frekuensi: "
             f"{resolution_fft:.2f} Hz"
         )
