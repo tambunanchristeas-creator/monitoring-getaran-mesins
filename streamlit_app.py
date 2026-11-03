@@ -208,6 +208,15 @@ fft_y_manual = st.sidebar.number_input(
     key="fft_y_manual"
 )
 
+fft_use_d82 = st.sidebar.checkbox(
+    "FFT hanya memakai sampel sebanyak D82 (jendela 10 detik)",
+    value=True,
+    key="fft_use_d82",
+    help="Aktif: jumlah titik FFT = sample_count (D82), resolusi = fs / D82. "
+         "Nonaktif: seluruh data yang diterima (3000 titik) dipakai, "
+         "resolusi lebih halus."
+)
+
 
 def apply_filter(data, fs, ftype, order, low, high):
     """Butterworth zero-phase filter. Jika setting tidak valid,
@@ -1162,6 +1171,9 @@ else:
         len(fft_data_acc_z)
     )
 
+    if fft_use_d82 and sample_count >= 4:
+        n_fft = min(n_fft, sample_count)
+
     fft_data_acc_x = fft_data_acc_x[:n_fft]
     fft_data_acc_y = fft_data_acc_y[:n_fft]
     fft_data_acc_z = fft_data_acc_z[:n_fft]
@@ -1629,4 +1641,4 @@ st.dataframe(
     ),
     use_container_width=True,
     hide_index=True
-)
+)update
