@@ -1154,19 +1154,21 @@ else:
     # VALIDASI DATA
     # =====================================================
 
-    if (
-        len(fft_data_acc_x) != sample_count
-        or len(fft_data_acc_y) != sample_count
-        or len(fft_data_acc_z) != sample_count
-    ):
+    # Jumlah titik FFT = data yang benar-benar diterima (berapa pun jumlahnya).
+    # sample_count (D82) hanya informasi jumlah sampel per 10 detik, bukan panjang array.
+    n_fft = min(
+        len(fft_data_acc_x),
+        len(fft_data_acc_y),
+        len(fft_data_acc_z)
+    )
 
-        st.error(
-            f"Jumlah data FFT tidak sesuai. "
-            f"Expected: {sample_count}, "
-            f"X: {len(fft_data_acc_x)}, "
-            f"Y: {len(fft_data_acc_y)}, "
-            f"Z: {len(fft_data_acc_z)}"
-        )
+    fft_data_acc_x = fft_data_acc_x[:n_fft]
+    fft_data_acc_y = fft_data_acc_y[:n_fft]
+    fft_data_acc_z = fft_data_acc_z[:n_fft]
+
+    if n_fft < 4:
+
+        st.error(f"Data FFT terlalu sedikit ({n_fft} titik).")
 
     elif sampling_frequency <= 0:
 
@@ -1331,12 +1333,12 @@ else:
         # =================================================
 
         nyquist = sampling_frequency / 2
-        resolution_fft = sampling_frequency / sample_count
+        resolution_fft = sampling_frequency / n_fft
 
         c1, c2, c3, c4 = st.columns(4)
 
         with c1:
-            st.metric("Jumlah Sampel", sample_count)
+            st.metric("Jumlah Titik FFT", n_fft)
 
         with c2:
             st.metric("Sampling", f"{sampling_frequency:.0f} Hz")
@@ -1454,7 +1456,7 @@ else:
             )
             return fig
         # Sinyal domain waktu: buang DC offset agar berpusat di 0
-        waktu = np.arange(sample_count) / sampling_frequency
+        waktu = np.arange(n_fft) / sampling_frequency
 
         sig_x = apply_filter(
             fft_data_acc_x - np.mean(fft_data_acc_x),
@@ -1527,6 +1529,7 @@ else:
         st.caption(
             f"FFT ID: {fft_id} | "
             f"Data diterima: {fft_time} | "
+            f"Sampel per 10 dtk (D82): {sample_count} | "
             f"Resolusi frekuensi: "
             f"{resolution_fft:.2f} Hz"
         )
