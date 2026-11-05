@@ -307,15 +307,29 @@ def load_fft_data():
         return None
 
 
+def load_fft_latest_id():
+    """Query ringan: hanya id FFT terbaru (tanpa data_x/y/z)."""
+    try:
+        res = (
+            supabase.table("FFT")
+            .select("id")
+            .order("id", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not res.data:
+            return None
+        return res.data[0]["id"]
+    except Exception:
+        return None
+
+
+
 # =========================================================
 # AMBIL DATA
 # =========================================================
 df = load_data()
 
-# =========================================================
-# AMBIL FFT TERBARU
-# =========================================================
-fft_latest = load_fft_data()
 
 # =========================================================
 # CEK DATA
@@ -1082,462 +1096,216 @@ with col_right:
 
 st.divider()
 
+
 # =========================================================
 # FFT ANALYSIS
 # =========================================================
+# Data FFT hanya diambil & digambar ulang ketika ESP32 mengirim
+# data FFT baru (id berubah) atau pengaturan sidebar diubah.
+# Selain itu, grafik dipakai ulang dari session_state sehingga
+# tidak ikut refresh 1 detik bersama halaman.
 
-st.header("📊 Analisis FFT Getaran")
+BLUE = "#9BC2F9"
+GRID = "#5E5C5C"
+TXT = "#ffffff"
 
-if fft_latest is None:
 
-    st.warning("Belum ada data FFT dari PLC.")
+def style_fig(fig, title, xlabel, ylabel):
+    fig.update_layout(
+        title=dict(
+            text=f"<b>{title}</b>",
+            x=0.0, xanchor="left",
+            font=dict(size=13, color="#ffffff")
+        ),
+        xaxis_title=xlabel,
+        yaxis_title=ylabel,
+        height=330,
+        margin=dict(l=55, r=15, t=50, b=50),
+        paper_bgcolor="#12151b",
+        plot_bgcolor="#12151b",
+        showlegend=False,
+        hovermode="x unified",
+        font=dict(size=10, color=TXT),
+    )
+    fig.update_xaxes(showgrid=False, zeroline=False, showline=False, ticks="")
+    fig.update_yaxes(
+        showgrid=True, gridcolor=GRID, gridwidth=1,
+        zeroline=False, showline=False, ticks=""
+    )
+    return fig
 
-else:
 
-    # =====================================================
-    # METADATA FFT
-    # =====================================================
+def build_fft_view(fft_latest):
+    """Hitung FFT + buat semua figure. Mengembalikan dict siap tampil."""
 
     fft_id = fft_latest["id"]
     fft_time = fft_latest["created_at"]
+    sample_count = int(fft_latest["sample_count"])
+    sampling_frequency = float(fft_latest["sampling_frequency"])
 
-    sample_count = int(
-        fft_latest["sample_count"]
-    )
+    raw = []
+    for key in ("data_x", "data_y", "data_z"):
+        d = fft_latest[key]
+        if isinstance(d, str):
+            d = json.loads(d)
+        raw.append(np.asarray(d, dtype=float))
 
-    sampling_frequency = float(
-        fft_latest["sampling_frequency"]
-    )
-
-    # =====================================================
-    # AMBIL DATA X, Y, Z
-    # =====================================================
-
-    fft_data_x = fft_latest["data_x"]
-    fft_data_y = fft_latest["data_y"]
-    fft_data_z = fft_latest["data_z"]
-
-    if isinstance(fft_data_x, str):
-        fft_data_x = json.loads(fft_data_x)
-
-    if isinstance(fft_data_y, str):
-        fft_data_y = json.loads(fft_data_y)
-
-    if isinstance(fft_data_z, str):
-        fft_data_z = json.loads(fft_data_z)
-
-    fft_data_x = np.asarray(
-        fft_data_x,
-        dtype=float
-    )
-
-    fft_data_y = np.asarray(
-        fft_data_y,
-        dtype=float
-    )
-
-    fft_data_z = np.asarray(
-        fft_data_z,
-        dtype=float
-    )
-    # =====================================================
-    # DATA FFT DARI PLC (REV5) DALAM mm/s2 -> DIJADIKAN m/s2
-    # =====================================================
-    # Grafik waktu dan FFT ditampilkan dalam m/s2 (1 m/s2 = 1000 mm/s2)
+    # Data PLC dalam mm/s2 -> dijadikan m/s2
     FFT_SCALE = 0.001
+    acc = [r * FFT_SCALE for r in raw]
 
-    fft_data_acc_x = fft_data_x * FFT_SCALE
-    fft_data_acc_y = fft_data_y * FFT_SCALE
-    fft_data_acc_z = fft_data_z * FFT_SCALE
-
-    # =====================================================
-    # VALIDASI DATA
-    # =====================================================
-
-    # Jumlah titik FFT = sample_count (D82), berapa pun nilainya.
-    # Maka resolusi FFT = sampling_frequency / sample_count, dan jarak antar
-    # titik pada grafik FFT sama dengan resolusi tersebut.
-    # (Jika data yang diterima lebih sedikit dari sample_count, dipakai yang ada.)
-    n_fft = min(
-        len(fft_data_acc_x),
-        len(fft_data_acc_y),
-        len(fft_data_acc_z)
-    )
-
+    n_fft = min(len(a) for a in acc)
     if sample_count >= 4:
         n_fft = min(n_fft, sample_count)
-
-    fft_data_acc_x = fft_data_acc_x[:n_fft]
-    fft_data_acc_y = fft_data_acc_y[:n_fft]
-    fft_data_acc_z = fft_data_acc_z[:n_fft]
+    acc = [a[:n_fft] for a in acc]
 
     if n_fft < 4:
+        return {"error": f"Data FFT terlalu sedikit ({n_fft} titik)."}
+    if sampling_frequency <= 0:
+        return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
-        st.error(f"Data FFT terlalu sedikit ({n_fft} titik).")
+    nyquist = sampling_frequency / 2
+    resolution_fft = sampling_frequency / n_fft
 
-    elif sampling_frequency <= 0:
+    try:
+        ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        ts = str(fft_time)
 
-        st.error("Sampling frequency harus lebih besar dari 0 Hz.")
+    # FFT X, Y, Z (dibatasi sampai Nyquist)
+    spectra = []
+    for a in acc:
+        f, amp = calculate_fft(a, sampling_frequency)
+        m = f <= nyquist
+        spectra.append((f[m], amp[m]))
 
-    else:
-
-        # =================================================
-        # HITUNG FFT X, Y, Z
-        # =================================================
-
-        frequency_x, amplitude_x = calculate_fft(
-            fft_data_acc_x,
-            sampling_frequency
+    # Sinyal domain waktu: buang DC offset
+    waktu = np.arange(n_fft) / sampling_frequency
+    signals = [
+        apply_filter(
+            a - np.mean(a), sampling_frequency,
+            filter_type, filter_order, f_low, f_high
         )
+        for a in acc
+    ]
 
-        frequency_y, amplitude_y = calculate_fft(
-            fft_data_acc_y,
-            sampling_frequency
+    fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
+    y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
+
+    sumbu = [("X", "Radial"), ("Y", "Axial"), ("Z", "Radial")]
+
+    figs_time, figs_fft = [], []
+    for (nama, arah), sig, (f, amp) in zip(sumbu, signals, spectra):
+
+        ft = go.Figure(go.Scatter(
+            x=waktu, y=sig, mode="lines",
+            line=dict(color=BLUE, width=0.8)
+        ))
+        ft = style_fig(
+            ft, f"Domain Waktu {nama} ({arah}) {ts}",
+            "Waktu (detik)", "Amplitudo (mm/s²)"
         )
+        ft.update_xaxes(range=[0, waktu[-1]])
+        figs_time.append(ft)
 
-        frequency_z, amplitude_z = calculate_fft(
-            fft_data_acc_z,
-            sampling_frequency
+        ff = go.Figure(go.Scatter(
+            x=f, y=amp, mode="lines",
+            line=dict(color=BLUE, width=1)
+        ))
+        ff = style_fig(
+            ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
+            "Frekuensi (Hz)", "Magnitudo (mm/s²)"
         )
+        ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
+        ff.update_yaxes(range=[0, y_top], autorange=False, fixedrange=True)
+        figs_fft.append(ff)
 
-        # =================================================
-        # FUNGSI PEAK HARMONIK 1X, 2X, 3X
-        # =================================================
-
-        def get_harmonic_peaks(
-            frequency,
-            amplitude,
-            rpm,
-            bandwidth=1.0
-        ):
-
-            if frequency is None or amplitude is None:
-                return {
-                    "1x": (0.0, 0.0),
-                    "2x": (0.0, 0.0),
-                    "3x": (0.0, 0.0)
-                }
-
-            if len(amplitude) <= 1:
-                return {
-                    "1x": (0.0, 0.0),
-                    "2x": (0.0, 0.0),
-                    "3x": (0.0, 0.0)
-                }
-
-            if rpm <= 0:
-                return {
-                    "1x": (0.0, 0.0),
-                    "2x": (0.0, 0.0),
-                    "3x": (0.0, 0.0)
-                }
-
-            # Frekuensi putaran mesin
-            one_x = rpm / 60.0
-
-            results = {}
-
-            # Cari peak 1X, 2X, dan 3X
-            for harmonic in [1, 2, 3]:
-
-                # Frekuensi teoritis harmonik
-                target_frequency = one_x * harmonic
-
-                # Area pencarian peak
-                mask = (
-                    (frequency >= target_frequency - bandwidth)
-                    &
-                    (frequency <= target_frequency + bandwidth)
-                )
-
-                # Jika tidak ada data di sekitar frekuensi target
-                if not np.any(mask):
-
-                    results[f"{harmonic}x"] = (
-                        target_frequency,
-                        0.0
-                    )
-
-                    continue
-
-                # Ambil data pada area tersebut
-                local_frequency = frequency[mask]
-
-                local_amplitude = amplitude[mask]
-
-                # Cari amplitudo terbesar
-                peak_index = np.argmax(
-                    local_amplitude
-                )
-
-                peak_frequency = float(
-                    local_frequency[peak_index]
-                )
-
-                peak_amplitude = float(
-                    local_amplitude[peak_index]
-                )
-
-                # Simpan hasil
-                results[f"{harmonic}x"] = (
-                    peak_frequency,
-                    peak_amplitude
-                )
-
-            return results
-
-        # =================================================
-        # PEAK 1X, 2X, 3X SUMBU X
-        # =================================================
-
-        harmonic_x = get_harmonic_peaks(
-            frequency_x,
-            amplitude_x,
-            rpm,
-            bandwidth=1.0
-        )
-
-        freq_1x_x, amp_1x_x = harmonic_x["1x"]
-        freq_2x_x, amp_2x_x = harmonic_x["2x"]
-        freq_3x_x, amp_3x_x = harmonic_x["3x"]
-
-
-        # =================================================
-        # PEAK 1X, 2X, 3X SUMBU Y
-        # =================================================
-
-        harmonic_y = get_harmonic_peaks(
-            frequency_y,
-            amplitude_y,
-            rpm,
-            bandwidth=1.0
-        )
-
-        freq_1x_y, amp_1x_y = harmonic_y["1x"]
-        freq_2x_y, amp_2x_y = harmonic_y["2x"]
-        freq_3x_y, amp_3x_y = harmonic_y["3x"]
-
-
-        # =================================================
-        # PEAK 1X, 2X, 3X SUMBU Z
-        # =================================================
-
-        harmonic_z = get_harmonic_peaks(
-            frequency_z,
-            amplitude_z,
-            rpm,
-            bandwidth=1.0
-        )
-
-        freq_1x_z, amp_1x_z = harmonic_z["1x"]
-        freq_2x_z, amp_2x_z = harmonic_z["2x"]
-        freq_3x_z, amp_3x_z = harmonic_z["3x"]
-
-                # =================================================
-        # INFORMASI FFT
-        # =================================================
-
-        nyquist = sampling_frequency / 2
-        resolution_fft = sampling_frequency / n_fft
-
-        c1, c2, c3, c4 = st.columns(4)
-
-        with c1:
-            st.metric("Jumlah Sampel", sample_count)
-
-        with c2:
-            st.metric("Sampling", f"{sampling_frequency:.0f} Hz")
-
-        with c3:
-            st.metric("Resolusi FFT", f"{resolution_fft:.2f} Hz")
-
-        with c4:
-            st.metric("Nyquist", f"{nyquist:.1f} Hz")
-
-        # =================================================
-        # DATA FRAME FFT X, Y, Z (dibatasi sampai Nyquist)
-        # =================================================
-
-        df_fft_x = pd.DataFrame({
-            "Frequency": frequency_x,
-            "Acceleration": amplitude_x
-        })
-        df_fft_y = pd.DataFrame({
-            "Frequency": frequency_y,
-            "Acceleration": amplitude_y
-        })
-        df_fft_z = pd.DataFrame({
-            "Frequency": frequency_z,
-            "Acceleration": amplitude_z
-        })
-
-        df_fft_x = df_fft_x[df_fft_x["Frequency"] <= nyquist]
-        df_fft_y = df_fft_y[df_fft_y["Frequency"] <= nyquist]
-        df_fft_z = df_fft_z[df_fft_z["Frequency"] <= nyquist]
-
-
-        # =================================================
-        # TAMPILAN GRAFIK: GRID 2 BARIS x 3 KOLOM
-        # =================================================
-
-        # Timestamp untuk judul grafik
-        try:
-            ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
-        except Exception:
-            ts = str(fft_time)
-
-        BLUE = "#9BC2F9"
-        GRID = "#5E5C5C"
-        TXT = "#ffffff"
-
-        def style_fig(fig, title, xlabel, ylabel):
-            fig.update_layout(
-                title=dict(
-                    text=f"<b>{title} {ts}</b>",
-                    x=0.0, xanchor="left",
-                    font=dict(size=13, color="#ffffff")
-                ),
-                xaxis_title=xlabel,
-                yaxis_title=ylabel,
-                height=330,
-                margin=dict(l=55, r=15, t=50, b=50),
-                paper_bgcolor="#12151b",
-                plot_bgcolor="#12151b",
-                showlegend=False,
-                hovermode="x unified",
-                font=dict(size=10, color=TXT),
-            )
-            fig.update_xaxes(
-                showgrid=False, zeroline=False,
-                showline=False, ticks="",
-            )
-            fig.update_yaxes(
-                showgrid=True, gridcolor=GRID, gridwidth=1,
-                zeroline=False, showline=False, ticks="",
-            )
-            return fig
-
-        def fig_time(t, y, nama_sumbu, arah):
-            fig = go.Figure(
-                go.Scatter(
-                    x=t, y=y, mode="lines",
-                    line=dict(color=BLUE, width=0.8)
-                )
-            )
-            fig = style_fig(
-                fig,
-                f"Domain Waktu {nama_sumbu} ({arah})",
-                "Waktu (detik)",
-                "Amplitudo (mm/s²)"
-            )
-            fig.update_xaxes(range=[0, t[-1]])
-            return fig
-
-        def fig_fft(f, a, nama_sumbu, arah):
-            fig = go.Figure(
-                go.Scatter(
-                    x=f, y=a, mode="lines",
-                    line=dict(color=BLUE, width=1)
-                )
-            )
-            fig = style_fig(
-                fig,
-                f"Domain Frekuensi {nama_sumbu} ({arah})",
-                "Frekuensi (Hz)",
-                "Magnitudo (mm/s²)"
-            )
-            fig.update_xaxes(
-                range=[0, nyquist],
-                tick0=0,
-                dtick=10
-            )
-
-            # Batas sumbu Y: manual dari sidebar, atau otomatis mengikuti puncak
-            y_top = max(FFT_Y_MAX, 0.001) if fft_y_auto else fft_y_manual
-            fig.update_yaxes(
-                range=[0, y_top],
-                autorange=False,
-                fixedrange=True
-            )
-            return fig
-        # Sinyal domain waktu: buang DC offset agar berpusat di 0
-        waktu = np.arange(n_fft) / sampling_frequency
-
-        sig_x = apply_filter(
-            fft_data_acc_x - np.mean(fft_data_acc_x),
-            sampling_frequency , filter_type, filter_order, f_low, f_high
-        )
-        sig_y = apply_filter(
-            fft_data_acc_y - np.mean(fft_data_acc_y),
-            sampling_frequency , filter_type, filter_order, f_low, f_high
-        )
-        sig_z = apply_filter(
-            fft_data_acc_z - np.mean(fft_data_acc_z),
-            sampling_frequency, filter_type, filter_order, f_low, f_high
-        )
-
-        # Data FFT (sudah dibatasi sampai Nyquist di df_fft_*)
-        PLOT_CFG = {"displayModeBar": False}
-
-        # ---------- BARIS 1: DOMAIN WAKTU ----------
-        t1, t2, t3 = st.columns(3)
-
-        with t1:
-            st.plotly_chart(
-                fig_time(waktu, sig_x, "X", "Radial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="time_x"
-            )
-        with t2:
-            st.plotly_chart(
-                fig_time(waktu, sig_y, "Y", "Axial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="time_y"
-            )
-        with t3:
-            st.plotly_chart(
-                fig_time(waktu, sig_z, "Z", "Radial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="time_z"
-            )
-        FFT_Y_MAX = 1.1 * max(
-            df_fft_x["Acceleration"].max(),
-            df_fft_y["Acceleration"].max(),
-            df_fft_z["Acceleration"].max()
-        )
-
-        # ---------- BARIS 2: DOMAIN FREKUENSI ----------
-        f1, f2, f3 = st.columns(3)
-
-        with f1:
-            st.plotly_chart(
-                fig_fft(df_fft_x["Frequency"], df_fft_x["Acceleration"], "X", "Radial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="fft_x"
-            )
-        with f2:
-            st.plotly_chart(
-                fig_fft(df_fft_y["Frequency"], df_fft_y["Acceleration"], "Y", "Axial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="fft_y"
-            )
-        with f3:
-            st.plotly_chart(
-                fig_fft(df_fft_z["Frequency"], df_fft_z["Acceleration"], "Z", "Radial"),
-                use_container_width=True, theme=None,
-                config=PLOT_CFG, key="fft_z"
-            )
-        # =================================================
-        # INFORMASI DATA FFT
-        # =================================================
-
-        st.caption(
-            f"FFT ID: {fft_id} | "
-            f"Data diterima: {fft_time} | "
+    return {
+        "error": None,
+        "sample_count": sample_count,
+        "sampling_frequency": sampling_frequency,
+        "resolution_fft": resolution_fft,
+        "nyquist": nyquist,
+        "figs_time": figs_time,
+        "figs_fft": figs_fft,
+        "caption": (
+            f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
             f"Titik data FFT: {n_fft} | "
-            f"Resolusi frekuensi: "
-            f"{resolution_fft:.2f} Hz"
-        )
+            f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
+        ),
+    }
+
+
+# ---- Ambil data hanya jika ada FFT baru ----
+latest_fft_id = load_fft_latest_id()
+
+if (
+    latest_fft_id is not None
+    and (
+        "fft_raw" not in st.session_state
+        or st.session_state.get("fft_raw_id") != latest_fft_id
+    )
+):
+    new_raw = load_fft_data()
+    if new_raw is not None:
+        st.session_state.fft_raw = new_raw
+        st.session_state.fft_raw_id = new_raw["id"]
+
+fft_latest = st.session_state.get("fft_raw")
+
+# ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
+if fft_latest is not None:
+    fft_sig = (
+        fft_latest["id"], filter_type, filter_order,
+        f_low, f_high, fft_y_auto, fft_y_manual
+    )
+    if st.session_state.get("fft_sig") != fft_sig:
+        try:
+            st.session_state.fft_view = build_fft_view(fft_latest)
+        except Exception as e:
+            st.session_state.fft_view = {"error": f"Gagal memproses FFT: {e}"}
+        st.session_state.fft_sig = fft_sig
+
+st.header("📊 Analisis FFT Getaran")
+
+view = st.session_state.get("fft_view")
+
+if fft_latest is None or view is None:
+
+    st.warning("Belum ada data FFT dari PLC.")
+
+elif view["error"]:
+
+    st.error(view["error"])
+
+else:
+
+    PLOT_CFG = {"displayModeBar": False}
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Jumlah Sampel", view["sample_count"])
+    c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
+    c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
+    c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
+
+    cols = st.columns(3)
+    for col, fig, k in zip(cols, view["figs_time"], "xyz"):
+        with col:
+            st.plotly_chart(
+                fig, use_container_width=True, theme=None,
+                config=PLOT_CFG, key=f"time_{k}"
+            )
+
+    cols = st.columns(3)
+    for col, fig, k in zip(cols, view["figs_fft"], "xyz"):
+        with col:
+            st.plotly_chart(
+                fig, use_container_width=True, theme=None,
+                config=PLOT_CFG, key=f"fft_{k}"
+            )
+
+    st.caption(view["caption"])
+
 # =========================================================
 # DATA UNTUK GRAFIK
 # =========================================================
