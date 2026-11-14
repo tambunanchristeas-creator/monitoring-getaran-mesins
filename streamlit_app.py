@@ -1182,7 +1182,7 @@ def build_fft_view(records):
         ft.update_xaxes(range=[0, waktu[-1]])
         figs_time.append(ft)
 
-        judul_fft = f"Domain Frekuensi {nama} ({arah}) {ts}"
+        judul_fft = f"Domain Frekuensi {nama} ({arah})"
         if n_used > 1:
             judul_fft += f" (rata-rata {n_used} rekaman)"
 
