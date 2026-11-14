@@ -1360,18 +1360,6 @@ with colg2:
         title="Grafik Velocity RMS X, Y, dan Z"
     )
 
-    fig_vib.add_hline(
-        y=4,
-        line_dash="dash",
-        line_color="yellow"
-    )
-
-    fig_vib.add_hline(
-        y=7,
-        line_dash="dash",
-        line_color="red"
-    )
-
     fig_vib.update_layout(
         title="Grafik Getaran - Velocity RMS",
         xaxis_title="Waktu",
