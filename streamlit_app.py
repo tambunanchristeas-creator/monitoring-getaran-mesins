@@ -7,6 +7,7 @@ import numpy as np
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
+from scipy import signal as sp_signal
 
 
 # =========================================================
@@ -152,6 +153,41 @@ supabase = create_client(
 if "last_click" not in st.session_state:
     st.session_state.last_click = 0
 
+# =========================================================
+# PENGATURAN FILTER (SIDEBAR)
+# =========================================================
+st.sidebar.header("🎛️ Pengaturan Filter")
+
+filter_type = st.sidebar.selectbox(
+    "Jenis filter",
+    ["Tanpa Filter", "High-Pass", "Low-Pass", "Band-Pass"],
+    index=1
+)
+
+filter_order = st.sidebar.slider("Orde filter", 1, 8, 4)
+
+f_low = 2.0
+f_high = 100.0
+
+if filter_type == "High-Pass":
+    f_low = st.sidebar.number_input(
+        "Cutoff High-Pass (Hz)", 0.1, 1000.0, 2.0, step=0.5
+    )
+
+elif filter_type == "Low-Pass":
+    f_high = st.sidebar.number_input(
+        "Cutoff Low-Pass (Hz)", 1.0, 2000.0, 100.0, step=5.0
+    )
+
+elif filter_type == "Band-Pass":
+    f_low = st.sidebar.number_input(
+        "Frekuensi bawah (Hz)", 0.1, 1000.0, 2.0, step=0.5
+    )
+    f_high = st.sidebar.number_input(
+        "Frekuensi atas (Hz)", 1.0, 2000.0, 100.0, step=5.0
+    )
+
+
 # ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
 st.sidebar.header("📈 Grafik FFT")
 
@@ -162,7 +198,7 @@ fft_y_auto = st.sidebar.checkbox(
 )
 
 fft_y_manual = st.sidebar.number_input(
-    "Batas maksimal sumbu Y FFT (m/s²)",
+    "Batas maksimal sumbu Y FFT (mm/s²)",
     min_value=0.001,
     max_value=1000.0,
     value=1.0,
@@ -173,23 +209,40 @@ fft_y_manual = st.sidebar.number_input(
 )
 
 
-# ---- Perataan spektrum (beberapa rekaman FFT) ----
-st.sidebar.header("📉 Perataan Spektrum")
+def apply_filter(data, fs, ftype, order, low, high):
+    """Butterworth zero-phase filter. Jika setting tidak valid,
+    sinyal dikembalikan tanpa difilter."""
 
-fft_avg_n = st.sidebar.slider(
-    "Jumlah rekaman FFT yang dirata-ratakan",
-    min_value=1,
-    max_value=20,
-    value=1,
-    help=(
-        "1 = FFT tunggal (tanpa perataan). Nilai lebih besar merata-ratakan "
-        "daya spektrum dari beberapa rekaman FFT terbaru agar puncak noise "
-        "acak mengecil, sedangkan harmonik 1x, 2x, 3x yang stabil tetap. "
-        "Pakai hanya saat RPM konstan."
-    ),
-    key="fft_avg_n"
-)
+    x = np.asarray(data, dtype=float)
 
+    if ftype == "Tanpa Filter" or len(x) < 16 or fs <= 0:
+        return x
+
+    nyq = fs / 2.0
+
+    if ftype == "High-Pass":
+        wn, btype = low / nyq, "highpass"
+
+    elif ftype == "Low-Pass":
+        wn, btype = high / nyq, "lowpass"
+
+    elif ftype == "Band-Pass":
+        if low >= high:
+            return x
+        wn, btype = [low / nyq, high / nyq], "bandpass"
+
+    else:
+        return x
+
+    # Cutoff harus berada di antara 0 dan Nyquist
+    if np.any(np.asarray(wn) <= 0) or np.any(np.asarray(wn) >= 1):
+        return x
+
+    try:
+        sos = sp_signal.butter(order, wn, btype=btype, output="sos")
+        return sp_signal.sosfiltfilt(sos, x)
+    except Exception:
+        return x
 
 # =========================================================
 # LOAD DATA MONITORING
@@ -297,15 +350,25 @@ def calculate_fft(data, sampling_frequency):
     # 1. Hilangkan DC offset
     signal = signal - np.mean(signal)
 
-    # 2. Hanning window (filter sudah dilakukan di ladder diagram PLC)
-    window = np.hanning(N)
-    signal_windowed = signal * window
+    # 2. FILTER (sesuai pilihan di sidebar)
+    filtered = apply_filter(
+        signal,
+        sampling_frequency,
+        filter_type,
+        filter_order,
+        f_low,
+        f_high
+    )
 
-    # 3. FFT
+    # 3. Hanning window
+    window = np.hanning(N)
+    signal_windowed = filtered * window
+
+    # 4. FFT
     fft_result = np.fft.rfft(signal_windowed)
     frequency = np.fft.rfftfreq(N, d=1.0 / sampling_frequency)
 
-    # 4. Amplitudo
+    # 5. Amplitudo
     amplitude = (2.0 / np.sum(window)) * np.abs(fft_result)
     amplitude[0] = 0.0
 
@@ -816,7 +879,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_x:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -840,7 +903,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_y:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -864,7 +927,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_z:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -1072,15 +1135,17 @@ def style_fig(fig, title, xlabel, ylabel):
     return fig
 
 
-def parse_fft_record(rec):
-    """Satu baris tabel FFT -> (acc [x, y, z] dalam m/s2, fs, n_fft, sample_count)."""
+def build_fft_view(fft_latest):
+    """Hitung FFT + buat semua figure. Mengembalikan dict siap tampil."""
 
-    sample_count = int(rec["sample_count"])
-    sampling_frequency = float(rec["sampling_frequency"])
+    fft_id = fft_latest["id"]
+    fft_time = fft_latest["created_at"]
+    sample_count = int(fft_latest["sample_count"])
+    sampling_frequency = float(fft_latest["sampling_frequency"])
 
     raw = []
     for key in ("data_x", "data_y", "data_z"):
-        d = rec[key]
+        d = fft_latest[key]
         if isinstance(d, str):
             d = json.loads(d)
         raw.append(np.asarray(d, dtype=float))
@@ -1093,22 +1158,6 @@ def parse_fft_record(rec):
     if sample_count >= 4:
         n_fft = min(n_fft, sample_count)
     acc = [a[:n_fft] for a in acc]
-
-    return acc, sampling_frequency, n_fft, sample_count
-
-
-def build_fft_view(records):
-    """Hitung FFT + buat semua figure. records[0] = rekaman FFT terbaru.
-
-    Jika ada lebih dari satu rekaman, spektrum dirata-ratakan (daya rata-rata,
-    lalu diakarkan) pada sumbu frekuensi rekaman terbaru. Grafik domain waktu
-    tetap dari rekaman terbaru."""
-
-    fft_latest = records[0]
-    fft_id = fft_latest["id"]
-    fft_time = fft_latest["created_at"]
-
-    acc, sampling_frequency, n_fft, sample_count = parse_fft_record(fft_latest)
 
     if n_fft < 4:
         return {"error": f"Data FFT terlalu sedikit ({n_fft} titik)."}
@@ -1123,45 +1172,22 @@ def build_fft_view(records):
     except Exception:
         ts = str(fft_time)
 
-    # FFT X, Y, Z rekaman terbaru (dibatasi sampai Nyquist)
+    # FFT X, Y, Z (dibatasi sampai Nyquist)
     spectra = []
     for a in acc:
         f, amp = calculate_fft(a, sampling_frequency)
         m = f <= nyquist
         spectra.append((f[m], amp[m]))
 
-    # Perataan dengan rekaman FFT sebelumnya (jika diminta)
-    n_used = 1
-    if len(records) > 1:
-        f_ref = [s[0] for s in spectra]
-        p_stack = [[s[1] ** 2] for s in spectra]
-
-        for rec in records[1:]:
-            try:
-                acc_r, fs_r, n_r, _ = parse_fft_record(rec)
-                if n_r < 4 or fs_r <= 0:
-                    continue
-                p_rec = []
-                for i, a in enumerate(acc_r):
-                    f_r, amp_r = calculate_fft(a, fs_r)
-                    p_rec.append(
-                        np.interp(f_ref[i], f_r, amp_r ** 2,
-                                  left=np.nan, right=np.nan)
-                    )
-            except Exception:
-                continue
-            for i in range(3):
-                p_stack[i].append(p_rec[i])
-            n_used += 1
-
-        spectra = [
-            (f_ref[i], np.sqrt(np.nanmean(np.vstack(p_stack[i]), axis=0)))
-            for i in range(3)
-        ]
-
-    # Sinyal domain waktu (rekaman terbaru): buang DC offset
+    # Sinyal domain waktu: buang DC offset
     waktu = np.arange(n_fft) / sampling_frequency
-    signals = [a - np.mean(a) for a in acc]
+    signals = [
+        apply_filter(
+            a - np.mean(a), sampling_frequency,
+            filter_type, filter_order, f_low, f_high
+        )
+        for a in acc
+    ]
 
     fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
     y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
@@ -1177,37 +1203,22 @@ def build_fft_view(records):
         ))
         ft = style_fig(
             ft, f"Domain Waktu {nama} ({arah}) {ts}",
-            "Waktu (detik)", "Amplitudo (m/s²)"
+            "Waktu (detik)", "Amplitudo (mm/s²)"
         )
         ft.update_xaxes(range=[0, waktu[-1]])
         figs_time.append(ft)
-
-        judul_fft = f"Domain Frekuensi {nama} ({arah}) {ts}"
-        if n_used > 1:
-            judul_fft += f" (rata-rata {n_used} rekaman)"
 
         ff = go.Figure(go.Scatter(
             x=f, y=amp, mode="lines",
             line=dict(color=BLUE, width=1)
         ))
         ff = style_fig(
-            ff, judul_fft,
-            "Frekuensi (Hz)", "Magnitudo (m/s²)"
+            ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
+            "Frekuensi (Hz)", "Magnitudo (mm/s²)"
         )
         ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
         ff.update_yaxes(range=[0, y_top], autorange=False, fixedrange=True)
         figs_fft.append(ff)
-
-    caption = (
-        f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
-        f"Titik data FFT: {n_fft} | "
-        f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
-    )
-    if n_used > 1:
-        caption += (
-            f" | Spektrum = rata-rata {n_used} rekaman FFT terbaru "
-            f"(domain waktu: rekaman terbaru)"
-        )
 
     return {
         "error": None,
@@ -1215,33 +1226,17 @@ def build_fft_view(records):
         "sampling_frequency": sampling_frequency,
         "resolution_fft": resolution_fft,
         "nyquist": nyquist,
-        "n_avg": n_used,
         "figs_time": figs_time,
         "figs_fft": figs_fft,
-        "caption": caption,
+        "caption": (
+            f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
+            f"Titik data FFT: {n_fft} | "
+            f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
+        ),
     }
 
 
-# ---- Ambil data hanya jika ada FFT baru atau jumlah perataan diubah ----
-def load_fft_records(n):
-    """n baris FFT terbaru (terbaru dulu)."""
-    try:
-        res = (
-            supabase.table("FFT")
-            .select(
-                "id,created_at,sample_count,sampling_frequency,data_x,data_y,data_z"
-            )
-            .order("id", desc=True)
-            .limit(int(n))
-            .execute()
-        )
-        return res.data or []
-    except Exception as e:
-        st.error("Gagal mengambil data FFT dari Supabase.")
-        st.code(str(e))
-        return []
-
-
+# ---- Ambil data hanya jika ada FFT baru ----
 latest_fft_id = load_fft_latest_id()
 
 if (
@@ -1249,23 +1244,20 @@ if (
     and (
         "fft_raw" not in st.session_state
         or st.session_state.get("fft_raw_id") != latest_fft_id
-        or st.session_state.get("fft_raw_n") != fft_avg_n
     )
 ):
-    new_records = load_fft_records(fft_avg_n)
-    if new_records:
-        st.session_state.fft_raw = new_records
-        st.session_state.fft_raw_id = new_records[0]["id"]
-        st.session_state.fft_raw_n = fft_avg_n
+    new_raw = load_fft_data()
+    if new_raw is not None:
+        st.session_state.fft_raw = new_raw
+        st.session_state.fft_raw_id = new_raw["id"]
 
 fft_latest = st.session_state.get("fft_raw")
-if isinstance(fft_latest, dict):          # sisa session lama (1 baris)
-    fft_latest = [fft_latest]
 
 # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
-if fft_latest:
+if fft_latest is not None:
     fft_sig = (
-        fft_latest[0]["id"], len(fft_latest), fft_y_auto, fft_y_manual
+        fft_latest["id"], filter_type, filter_order,
+        f_low, f_high, fft_y_auto, fft_y_manual
     )
     if st.session_state.get("fft_sig") != fft_sig:
         try:
@@ -1278,7 +1270,7 @@ st.header("📊 Analisis FFT Getaran")
 
 view = st.session_state.get("fft_view")
 
-if not fft_latest or view is None:
+if fft_latest is None or view is None:
 
     st.warning("Belum ada data FFT dari PLC.")
 
@@ -1290,12 +1282,11 @@ else:
 
     PLOT_CFG = {"displayModeBar": False}
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Jumlah Sampel", view["sample_count"])
     c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
     c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
     c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
-    c5.metric("Rekaman dirata-ratakan", view["n_avg"])
 
     cols = st.columns(3)
     for col, fig, k in zip(cols, view["figs_time"], "xyz"):
