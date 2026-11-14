@@ -198,7 +198,7 @@ fft_y_auto = st.sidebar.checkbox(
 )
 
 fft_y_manual = st.sidebar.number_input(
-    "Batas maksimal sumbu Y FFT (m/s²)",
+    "Batas maksimal sumbu Y FFT (mm/s²)",
     min_value=0.001,
     max_value=1000.0,
     value=1.0,
@@ -879,7 +879,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_x:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -903,7 +903,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_y:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -927,7 +927,7 @@ with col_right:
             f"""
             <div class="acc-number">
                 {acceleration_rms_z:.2f}
-                <span>m/s²</span>
+                <span>mm/s²</span>
             </div>
             """,
 
@@ -1203,7 +1203,7 @@ def build_fft_view(fft_latest):
         ))
         ft = style_fig(
             ft, f"Domain Waktu {nama} ({arah}) {ts}",
-            "Waktu (detik)", "Amplitudo (m/s²)"
+            "Waktu (detik)", "Amplitudo (mm/s²)"
         )
         ft.update_xaxes(range=[0, waktu[-1]])
         figs_time.append(ft)
@@ -1214,7 +1214,7 @@ def build_fft_view(fft_latest):
         ))
         ff = style_fig(
             ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
-            "Frekuensi (Hz)", "Magnitudo (m/s²)"
+            "Frekuensi (Hz)", "Magnitudo (mm/s²)"
         )
         ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
         ff.update_yaxes(range=[0, y_top], autorange=False, fixedrange=True)
