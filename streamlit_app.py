@@ -7,7 +7,6 @@ import numpy as np
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
-from scipy import signal as sp_signal
 
 
 # =========================================================
@@ -153,41 +152,6 @@ supabase = create_client(
 if "last_click" not in st.session_state:
     st.session_state.last_click = 0
 
-# =========================================================
-# PENGATURAN FILTER (SIDEBAR)
-# =========================================================
-st.sidebar.header("🎛️ Pengaturan Filter")
-
-filter_type = st.sidebar.selectbox(
-    "Jenis filter",
-    ["Tanpa Filter", "High-Pass", "Low-Pass", "Band-Pass"],
-    index=1
-)
-
-filter_order = st.sidebar.slider("Orde filter", 1, 8, 4)
-
-f_low = 2.0
-f_high = 100.0
-
-if filter_type == "High-Pass":
-    f_low = st.sidebar.number_input(
-        "Cutoff High-Pass (Hz)", 0.1, 1000.0, 2.0, step=0.5
-    )
-
-elif filter_type == "Low-Pass":
-    f_high = st.sidebar.number_input(
-        "Cutoff Low-Pass (Hz)", 1.0, 2000.0, 100.0, step=5.0
-    )
-
-elif filter_type == "Band-Pass":
-    f_low = st.sidebar.number_input(
-        "Frekuensi bawah (Hz)", 0.1, 1000.0, 2.0, step=0.5
-    )
-    f_high = st.sidebar.number_input(
-        "Frekuensi atas (Hz)", 1.0, 2000.0, 100.0, step=5.0
-    )
-
-
 # ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
 st.sidebar.header("📈 Grafik FFT")
 
@@ -226,41 +190,6 @@ fft_avg_n = st.sidebar.slider(
     key="fft_avg_n"
 )
 
-
-def apply_filter(data, fs, ftype, order, low, high):
-    """Butterworth zero-phase filter. Jika setting tidak valid,
-    sinyal dikembalikan tanpa difilter."""
-
-    x = np.asarray(data, dtype=float)
-
-    if ftype == "Tanpa Filter" or len(x) < 16 or fs <= 0:
-        return x
-
-    nyq = fs / 2.0
-
-    if ftype == "High-Pass":
-        wn, btype = low / nyq, "highpass"
-
-    elif ftype == "Low-Pass":
-        wn, btype = high / nyq, "lowpass"
-
-    elif ftype == "Band-Pass":
-        if low >= high:
-            return x
-        wn, btype = [low / nyq, high / nyq], "bandpass"
-
-    else:
-        return x
-
-    # Cutoff harus berada di antara 0 dan Nyquist
-    if np.any(np.asarray(wn) <= 0) or np.any(np.asarray(wn) >= 1):
-        return x
-
-    try:
-        sos = sp_signal.butter(order, wn, btype=btype, output="sos")
-        return sp_signal.sosfiltfilt(sos, x)
-    except Exception:
-        return x
 
 # =========================================================
 # LOAD DATA MONITORING
@@ -368,25 +297,15 @@ def calculate_fft(data, sampling_frequency):
     # 1. Hilangkan DC offset
     signal = signal - np.mean(signal)
 
-    # 2. FILTER (sesuai pilihan di sidebar)
-    filtered = apply_filter(
-        signal,
-        sampling_frequency,
-        filter_type,
-        filter_order,
-        f_low,
-        f_high
-    )
-
-    # 3. Hanning window
+    # 2. Hanning window (filter sudah dilakukan di ladder diagram PLC)
     window = np.hanning(N)
-    signal_windowed = filtered * window
+    signal_windowed = signal * window
 
-    # 4. FFT
+    # 3. FFT
     fft_result = np.fft.rfft(signal_windowed)
     frequency = np.fft.rfftfreq(N, d=1.0 / sampling_frequency)
 
-    # 5. Amplitudo
+    # 4. Amplitudo
     amplitude = (2.0 / np.sum(window)) * np.abs(fft_result)
     amplitude[0] = 0.0
 
@@ -1242,13 +1161,7 @@ def build_fft_view(records):
 
     # Sinyal domain waktu (rekaman terbaru): buang DC offset
     waktu = np.arange(n_fft) / sampling_frequency
-    signals = [
-        apply_filter(
-            a - np.mean(a), sampling_frequency,
-            filter_type, filter_order, f_low, f_high
-        )
-        for a in acc
-    ]
+    signals = [a - np.mean(a) for a in acc]
 
     fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
     y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
@@ -1352,8 +1265,7 @@ if isinstance(fft_latest, dict):          # sisa session lama (1 baris)
 # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
 if fft_latest:
     fft_sig = (
-        fft_latest[0]["id"], len(fft_latest), filter_type, filter_order,
-        f_low, f_high, fft_y_auto, fft_y_manual
+        fft_latest[0]["id"], len(fft_latest), fft_y_auto, fft_y_manual
     )
     if st.session_state.get("fft_sig") != fft_sig:
         try:
