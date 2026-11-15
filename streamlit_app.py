@@ -208,6 +208,33 @@ fft_y_manual = st.sidebar.number_input(
     key="fft_y_manual"
 )
 
+# ---- Metode spektrum: FFT biasa atau Welch ----
+st.sidebar.header("📐 Metode Spektrum")
+
+spec_method = st.sidebar.selectbox(
+    "Metode",
+    ["FFT biasa", "Welch"],
+    index=0,
+    key="spec_method"
+)
+
+welch_nperseg = 512
+welch_overlap = 50
+
+if spec_method == "Welch":
+    welch_nperseg = st.sidebar.selectbox(
+        "Panjang segmen (titik)",
+        [128, 256, 512, 1024, 2048],
+        index=2,
+        key="welch_nperseg",
+        help="Segmen lebih panjang = resolusi frekuensi lebih halus, "
+             "tetapi jumlah segmen yang dirata-ratakan lebih sedikit."
+    )
+    welch_overlap = st.sidebar.slider(
+        "Tumpang tindih segmen (%)", 0, 90, 50, step=10,
+        key="welch_overlap"
+    )
+
 
 def apply_filter(data, fs, ftype, order, low, high):
     """Butterworth zero-phase filter. Jika setting tidak valid,
@@ -373,6 +400,45 @@ def calculate_fft(data, sampling_frequency):
     amplitude[0] = 0.0
 
     return frequency, amplitude
+
+
+def calculate_welch(data, sampling_frequency, nperseg, overlap_pct):
+    """Spektrum amplitudo metode Welch: sinyal dipotong menjadi segmen
+    Hann yang saling tumpang tindih, lalu spektrum daya tiap segmen
+    dirata-ratakan. Hasil dinyatakan sebagai amplitudo puncak (sama
+    skalanya dengan FFT biasa di atas)."""
+
+    x = np.asarray(data, dtype=float)
+    x = x - np.mean(x)
+
+    x = apply_filter(
+        x,
+        sampling_frequency,
+        filter_type,
+        filter_order,
+        f_low,
+        f_high
+    )
+
+    nper = int(min(nperseg, len(x)))
+    nov = int(nper * overlap_pct / 100.0)
+
+    frequency, pxx = sp_signal.welch(
+        x,
+        fs=sampling_frequency,
+        window="hann",
+        nperseg=nper,
+        noverlap=nov,
+        detrend="constant",
+        scaling="spectrum"
+    )
+
+    amplitude = np.sqrt(2.0 * pxx)
+    amplitude[0] = 0.0
+
+    return frequency, amplitude
+
+
 # =========================================================
 # FORMAT DATA MONITORING
 # =========================================================
@@ -1165,7 +1231,21 @@ def build_fft_view(fft_latest):
         return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
     nyquist = sampling_frequency / 2
-    resolution_fft = sampling_frequency / n_fft
+
+    # Metode spektrum
+    use_welch = (spec_method == "Welch")
+    nper = min(int(welch_nperseg), n_fft)
+    if use_welch and nper < 16:
+        use_welch = False            # data terlalu pendek untuk Welch
+
+    if use_welch:
+        nov = int(nper * welch_overlap / 100.0)
+        n_seg = 1 + (n_fft - nper) // (nper - nov)
+        resolution_fft = sampling_frequency / nper
+        metode = f"Welch, {n_seg} segmen x {nper} titik"
+    else:
+        resolution_fft = sampling_frequency / n_fft
+        metode = "FFT"
 
     try:
         ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
@@ -1175,7 +1255,12 @@ def build_fft_view(fft_latest):
     # FFT X, Y, Z (dibatasi sampai Nyquist)
     spectra = []
     for a in acc:
-        f, amp = calculate_fft(a, sampling_frequency)
+        if use_welch:
+            f, amp = calculate_welch(
+                a, sampling_frequency, nper, welch_overlap
+            )
+        else:
+            f, amp = calculate_fft(a, sampling_frequency)
         m = f <= nyquist
         spectra.append((f[m], amp[m]))
 
@@ -1213,7 +1298,7 @@ def build_fft_view(fft_latest):
             line=dict(color=BLUE, width=1)
         ))
         ff = style_fig(
-            ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
+            ff, f"{'Welch' if use_welch else 'Domain Frekuensi'} {nama} ({arah}) {ts}",
             "Frekuensi (Hz)", "Magnitudo (mm/s²)"
         )
         ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
@@ -1230,7 +1315,7 @@ def build_fft_view(fft_latest):
         "figs_fft": figs_fft,
         "caption": (
             f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
-            f"Titik data FFT: {n_fft} | "
+            f"Titik data: {n_fft} | Metode: {metode} | "
             f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
         ),
     }
@@ -1257,7 +1342,8 @@ fft_latest = st.session_state.get("fft_raw")
 if fft_latest is not None:
     fft_sig = (
         fft_latest["id"], filter_type, filter_order,
-        f_low, f_high, fft_y_auto, fft_y_manual
+        f_low, f_high, fft_y_auto, fft_y_manual,
+        spec_method, welch_nperseg, welch_overlap
     )
     if st.session_state.get("fft_sig") != fft_sig:
         try:
@@ -1285,7 +1371,7 @@ else:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Jumlah Sampel", view["sample_count"])
     c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
-    c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
+    c3.metric("Resolusi frekuensi", f"{view['resolution_fft']:.2f} Hz")
     c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
 
     cols = st.columns(3)
