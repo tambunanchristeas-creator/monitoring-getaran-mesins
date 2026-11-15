@@ -153,43 +153,26 @@ supabase = create_client(
 if "last_click" not in st.session_state:
     st.session_state.last_click = 0
 
-# =========================================================
-# PENGATURAN FILTER (SIDEBAR)
-# =========================================================
-st.sidebar.header("🎛️ Pengaturan Filter")
-
-filter_type = st.sidebar.selectbox(
-    "Jenis filter",
-    ["Tanpa Filter", "High-Pass", "Low-Pass", "Band-Pass"],
-    index=1
-)
-
-filter_order = st.sidebar.slider("Orde filter", 1, 8, 4)
-
-f_low = 2.0
-f_high = 100.0
-
-if filter_type == "High-Pass":
-    f_low = st.sidebar.number_input(
-        "Cutoff High-Pass (Hz)", 0.1, 1000.0, 2.0, step=0.5
-    )
-
-elif filter_type == "Low-Pass":
-    f_high = st.sidebar.number_input(
-        "Cutoff Low-Pass (Hz)", 1.0, 2000.0, 100.0, step=5.0
-    )
-
-elif filter_type == "Band-Pass":
-    f_low = st.sidebar.number_input(
-        "Frekuensi bawah (Hz)", 0.1, 1000.0, 2.0, step=0.5
-    )
-    f_high = st.sidebar.number_input(
-        "Frekuensi atas (Hz)", 1.0, 2000.0, 100.0, step=5.0
-    )
-
-
 # ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
 st.sidebar.header("📈 Grafik FFT")
+
+spec_method = st.sidebar.radio(
+    "Metode spektrum",
+    ["FFT biasa", "Welch"],
+    index=1,
+    key="spec_method"
+)
+
+welch_nperseg = st.sidebar.select_slider(
+    "Panjang segmen Welch (titik)",
+    options=[128, 256, 512, 1024, 2048],
+    value=512,
+    disabled=(spec_method != "Welch"),
+    key="welch_nperseg",
+    help="Segmen lebih panjang = resolusi frekuensi lebih halus, "
+         "tetapi jumlah segmen yang dirata-ratakan lebih sedikit (noise lebih besar). "
+         "Tumpang tindih tetap 50%."
+)
 
 fft_y_auto = st.sidebar.checkbox(
     "Batas Y otomatis",
@@ -208,68 +191,6 @@ fft_y_manual = st.sidebar.number_input(
     key="fft_y_manual"
 )
 
-# ---- Metode spektrum: FFT biasa atau Welch ----
-st.sidebar.header("📐 Metode Spektrum")
-
-spec_method = st.sidebar.selectbox(
-    "Metode",
-    ["FFT biasa", "Welch"],
-    index=0,
-    key="spec_method"
-)
-
-welch_nperseg = 512
-welch_overlap = 50
-
-if spec_method == "Welch":
-    welch_nperseg = st.sidebar.selectbox(
-        "Panjang segmen (titik)",
-        [128, 256, 512, 1024, 2048],
-        index=2,
-        key="welch_nperseg",
-        help="Segmen lebih panjang = resolusi frekuensi lebih halus, "
-             "tetapi jumlah segmen yang dirata-ratakan lebih sedikit."
-    )
-    welch_overlap = st.sidebar.slider(
-        "Tumpang tindih segmen (%)", 0, 90, 50, step=10,
-        key="welch_overlap"
-    )
-
-
-def apply_filter(data, fs, ftype, order, low, high):
-    """Butterworth zero-phase filter. Jika setting tidak valid,
-    sinyal dikembalikan tanpa difilter."""
-
-    x = np.asarray(data, dtype=float)
-
-    if ftype == "Tanpa Filter" or len(x) < 16 or fs <= 0:
-        return x
-
-    nyq = fs / 2.0
-
-    if ftype == "High-Pass":
-        wn, btype = low / nyq, "highpass"
-
-    elif ftype == "Low-Pass":
-        wn, btype = high / nyq, "lowpass"
-
-    elif ftype == "Band-Pass":
-        if low >= high:
-            return x
-        wn, btype = [low / nyq, high / nyq], "bandpass"
-
-    else:
-        return x
-
-    # Cutoff harus berada di antara 0 dan Nyquist
-    if np.any(np.asarray(wn) <= 0) or np.any(np.asarray(wn) >= 1):
-        return x
-
-    try:
-        sos = sp_signal.butter(order, wn, btype=btype, output="sos")
-        return sp_signal.sosfiltfilt(sos, x)
-    except Exception:
-        return x
 
 # =========================================================
 # LOAD DATA MONITORING
@@ -367,77 +288,42 @@ if df.empty:
 
     st.stop()
 
-def calculate_fft(data, sampling_frequency):
-    signal = np.asarray(data, dtype=float)
-    N = len(signal)
-
-    if N < 4:
-        return None, None
-
-    # 1. Hilangkan DC offset
-    signal = signal - np.mean(signal)
-
-    # 2. FILTER (sesuai pilihan di sidebar)
-    filtered = apply_filter(
-        signal,
-        sampling_frequency,
-        filter_type,
-        filter_order,
-        f_low,
-        f_high
-    )
-
-    # 3. Hanning window
-    window = np.hanning(N)
-    signal_windowed = filtered * window
-
-    # 4. FFT
-    fft_result = np.fft.rfft(signal_windowed)
-    frequency = np.fft.rfftfreq(N, d=1.0 / sampling_frequency)
-
-    # 5. Amplitudo
-    amplitude = (2.0 / np.sum(window)) * np.abs(fft_result)
-    amplitude[0] = 0.0
-
-    return frequency, amplitude
-
-
-def calculate_welch(data, sampling_frequency, nperseg, overlap_pct):
-    """Spektrum amplitudo metode Welch: sinyal dipotong menjadi segmen
-    Hann yang saling tumpang tindih, lalu spektrum daya tiap segmen
-    dirata-ratakan. Hasil dinyatakan sebagai amplitudo puncak (sama
-    skalanya dengan FFT biasa di atas)."""
+def calculate_spectrum(data, sampling_frequency, method, nperseg):
+    """Amplitudo puncak (sinusoida amplitudo A -> A) dengan jendela Hanning.
+    method: "FFT biasa" (satu FFT seluruh data) atau "Welch" (rata-rata
+    FFT dari segmen yang saling tumpang tindih 50%)."""
 
     x = np.asarray(data, dtype=float)
-    x = x - np.mean(x)
+    n = len(x)
 
-    x = apply_filter(
-        x,
-        sampling_frequency,
-        filter_type,
-        filter_order,
-        f_low,
-        f_high
-    )
+    if n < 4:
+        return None, None, 1
 
-    nper = int(min(nperseg, len(x)))
-    nov = int(nper * overlap_pct / 100.0)
+    x = x - np.mean(x)          # buang DC offset
 
-    frequency, pxx = sp_signal.welch(
-        x,
-        fs=sampling_frequency,
-        window="hann",
-        nperseg=nper,
-        noverlap=nov,
-        detrend="constant",
-        scaling="spectrum"
-    )
+    if method == "Welch":
+        seg = int(min(nperseg, n))
+        freq, pxx = sp_signal.welch(
+            x,
+            fs=sampling_frequency,
+            window="hann",
+            nperseg=seg,
+            noverlap=seg // 2,
+            detrend="constant",
+            scaling="spectrum",     # kuadrat rata-rata (A^2 / 2 untuk sinusoida)
+            average="mean"
+        )
+        amplitude = np.sqrt(2.0 * pxx)
+        n_seg = 1 + (n - seg) // (seg - seg // 2)
+    else:
+        window = np.hanning(n)
+        spectrum = np.fft.rfft(x * window)
+        freq = np.fft.rfftfreq(n, d=1.0 / sampling_frequency)
+        amplitude = (2.0 / np.sum(window)) * np.abs(spectrum)
+        n_seg = 1
 
-    amplitude = np.sqrt(2.0 * pxx)
     amplitude[0] = 0.0
-
-    return frequency, amplitude
-
+    return freq, amplitude, n_seg
 
 # =========================================================
 # FORMAT DATA MONITORING
@@ -1231,21 +1117,11 @@ def build_fft_view(fft_latest):
         return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
     nyquist = sampling_frequency / 2
-
-    # Metode spektrum
-    use_welch = (spec_method == "Welch")
-    nper = min(int(welch_nperseg), n_fft)
-    if use_welch and nper < 16:
-        use_welch = False            # data terlalu pendek untuk Welch
-
-    if use_welch:
-        nov = int(nper * welch_overlap / 100.0)
-        n_seg = 1 + (n_fft - nper) // (nper - nov)
-        resolution_fft = sampling_frequency / nper
-        metode = f"Welch, {n_seg} segmen x {nper} titik"
+    if spec_method == "Welch":
+        seg_len = int(min(welch_nperseg, n_fft))
     else:
-        resolution_fft = sampling_frequency / n_fft
-        metode = "FFT"
+        seg_len = n_fft
+    resolution_fft = sampling_frequency / seg_len
 
     try:
         ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
@@ -1254,25 +1130,17 @@ def build_fft_view(fft_latest):
 
     # FFT X, Y, Z (dibatasi sampai Nyquist)
     spectra = []
+    n_seg = 1
     for a in acc:
-        if use_welch:
-            f, amp = calculate_welch(
-                a, sampling_frequency, nper, welch_overlap
-            )
-        else:
-            f, amp = calculate_fft(a, sampling_frequency)
+        f, amp, n_seg = calculate_spectrum(
+            a, sampling_frequency, spec_method, welch_nperseg
+        )
         m = f <= nyquist
         spectra.append((f[m], amp[m]))
 
     # Sinyal domain waktu: buang DC offset
     waktu = np.arange(n_fft) / sampling_frequency
-    signals = [
-        apply_filter(
-            a - np.mean(a), sampling_frequency,
-            filter_type, filter_order, f_low, f_high
-        )
-        for a in acc
-    ]
+    signals = [a - np.mean(a) for a in acc]
 
     fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
     y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
@@ -1298,7 +1166,7 @@ def build_fft_view(fft_latest):
             line=dict(color=BLUE, width=1)
         ))
         ff = style_fig(
-            ff, f"{'Welch' if use_welch else 'Domain Frekuensi'} {nama} ({arah}) {ts}",
+            ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
             "Frekuensi (Hz)", "Magnitudo (mm/s²)"
         )
         ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
@@ -1311,11 +1179,14 @@ def build_fft_view(fft_latest):
         "sampling_frequency": sampling_frequency,
         "resolution_fft": resolution_fft,
         "nyquist": nyquist,
+        "metode": (f"Welch ({n_seg} segmen x {seg_len} titik)"
+                   if spec_method == "Welch" else "FFT biasa"),
         "figs_time": figs_time,
         "figs_fft": figs_fft,
         "caption": (
             f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
-            f"Titik data: {n_fft} | Metode: {metode} | "
+            f"Titik data: {n_fft} | "
+            f"Metode: {'Welch, ' + str(n_seg) + ' segmen x ' + str(seg_len) + ' titik' if spec_method == 'Welch' else 'FFT biasa'} | "
             f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
         ),
     }
@@ -1341,9 +1212,8 @@ fft_latest = st.session_state.get("fft_raw")
 # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
 if fft_latest is not None:
     fft_sig = (
-        fft_latest["id"], filter_type, filter_order,
-        f_low, f_high, fft_y_auto, fft_y_manual,
-        spec_method, welch_nperseg, welch_overlap
+        fft_latest["id"], spec_method, welch_nperseg,
+        fft_y_auto, fft_y_manual
     )
     if st.session_state.get("fft_sig") != fft_sig:
         try:
@@ -1371,7 +1241,7 @@ else:
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Jumlah Sampel", view["sample_count"])
     c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
-    c3.metric("Resolusi frekuensi", f"{view['resolution_fft']:.2f} Hz")
+    c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
     c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
 
     cols = st.columns(3)
