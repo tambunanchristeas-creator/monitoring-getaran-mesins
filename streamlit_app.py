@@ -1244,16 +1244,19 @@ else:
         "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
     )
 
-    # ---- Grafik disusun ke bawah: Waktu -> Frekuensi untuk tiap sumbu ----
+    # ---- Tiap sumbu satu baris: Domain Waktu (kiri) | Domain Frekuensi (kanan) ----
     for k, fig_t, fig_f in zip("xyz", view["figs_time"], view["figs_fft"]):
-        st.plotly_chart(
-            fig_t, use_container_width=True, theme=None,
-            config=PLOT_CFG, key=f"time_{k}"
-        )
-        st.plotly_chart(
-            fig_f, use_container_width=True, theme=None,
-            config=PLOT_CFG, key=f"fft_{k}"
-        )
+        col_t, col_f = st.columns(2)
+        with col_t:
+            st.plotly_chart(
+                fig_t, use_container_width=True, theme=None,
+                config=PLOT_CFG, key=f"time_{k}"
+            )
+        with col_f:
+            st.plotly_chart(
+                fig_f, use_container_width=True, theme=None,
+                config=PLOT_CFG, key=f"fft_{k}"
+            )
 
     st.caption(view["caption"])
 
