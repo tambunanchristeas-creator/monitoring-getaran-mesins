@@ -7,7 +7,6 @@ import numpy as np
 import time
 import json
 from streamlit_autorefresh import st_autorefresh
-from scipy import signal as sp_signal
 
 
 # =========================================================
@@ -156,24 +155,6 @@ if "last_click" not in st.session_state:
 # ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
 st.sidebar.header("📈 Grafik FFT")
 
-spec_method = st.sidebar.radio(
-    "Metode spektrum",
-    ["FFT biasa", "Welch"],
-    index=1,
-    key="spec_method"
-)
-
-welch_nperseg = st.sidebar.select_slider(
-    "Panjang segmen Welch (titik)",
-    options=[128, 256, 512, 1024, 2048],
-    value=512,
-    disabled=(spec_method != "Welch"),
-    key="welch_nperseg",
-    help="Segmen lebih panjang = resolusi frekuensi lebih halus, "
-         "tetapi jumlah segmen yang dirata-ratakan lebih sedikit (noise lebih besar). "
-         "Tumpang tindih tetap 50%."
-)
-
 fft_y_auto = st.sidebar.checkbox(
     "Batas Y otomatis",
     value=False,
@@ -288,42 +269,25 @@ if df.empty:
 
     st.stop()
 
-def calculate_spectrum(data, sampling_frequency, method, nperseg):
-    """Amplitudo puncak (sinusoida amplitudo A -> A) dengan jendela Hanning.
-    method: "FFT biasa" (satu FFT seluruh data) atau "Welch" (rata-rata
-    FFT dari segmen yang saling tumpang tindih 50%)."""
+def calculate_spectrum(data, sampling_frequency):
+    """Amplitudo puncak (sinusoida amplitudo A -> A) dengan jendela Hanning,
+    menggunakan satu FFT atas seluruh data."""
 
     x = np.asarray(data, dtype=float)
     n = len(x)
 
     if n < 4:
-        return None, None, 1
+        return None, None
 
     x = x - np.mean(x)          # buang DC offset
 
-    if method == "Welch":
-        seg = int(min(nperseg, n))
-        freq, pxx = sp_signal.welch(
-            x,
-            fs=sampling_frequency,
-            window="hann",
-            nperseg=seg,
-            noverlap=seg // 2,
-            detrend="constant",
-            scaling="spectrum",     # kuadrat rata-rata (A^2 / 2 untuk sinusoida)
-            average="mean"
-        )
-        amplitude = np.sqrt(2.0 * pxx)
-        n_seg = 1 + (n - seg) // (seg - seg // 2)
-    else:
-        window = np.hanning(n)
-        spectrum = np.fft.rfft(x * window)
-        freq = np.fft.rfftfreq(n, d=1.0 / sampling_frequency)
-        amplitude = (2.0 / np.sum(window)) * np.abs(spectrum)
-        n_seg = 1
+    window = np.hanning(n)
+    spectrum = np.fft.rfft(x * window)
+    freq = np.fft.rfftfreq(n, d=1.0 / sampling_frequency)
+    amplitude = (2.0 / np.sum(window)) * np.abs(spectrum)
 
     amplitude[0] = 0.0
-    return freq, amplitude, n_seg
+    return freq, amplitude
 
 # =========================================================
 # FORMAT DATA MONITORING
@@ -1087,6 +1051,9 @@ def style_fig(fig, title, xlabel, ylabel):
     return fig
 
 
+SUMBU = [("X", "Radial"), ("Y", "Axial"), ("Z", "Radial")]
+
+
 def build_fft_view(fft_latest):
     """Hitung FFT + buat semua figure. Mengembalikan dict siap tampil."""
 
@@ -1117,11 +1084,7 @@ def build_fft_view(fft_latest):
         return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
     nyquist = sampling_frequency / 2
-    if spec_method == "Welch":
-        seg_len = int(min(welch_nperseg, n_fft))
-    else:
-        seg_len = n_fft
-    resolution_fft = sampling_frequency / seg_len
+    resolution_fft = sampling_frequency / n_fft
 
     try:
         ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
@@ -1130,11 +1093,8 @@ def build_fft_view(fft_latest):
 
     # FFT X, Y, Z (dibatasi sampai Nyquist)
     spectra = []
-    n_seg = 1
     for a in acc:
-        f, amp, n_seg = calculate_spectrum(
-            a, sampling_frequency, spec_method, welch_nperseg
-        )
+        f, amp = calculate_spectrum(a, sampling_frequency)
         m = f <= nyquist
         spectra.append((f[m], amp[m]))
 
@@ -1145,10 +1105,8 @@ def build_fft_view(fft_latest):
     fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
     y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
 
-    sumbu = [("X", "Radial"), ("Y", "Axial"), ("Z", "Radial")]
-
     figs_time, figs_fft = [], []
-    for (nama, arah), sig, (f, amp) in zip(sumbu, signals, spectra):
+    for (nama, arah), sig, (f, amp) in zip(SUMBU, signals, spectra):
 
         ft = go.Figure(go.Scatter(
             x=waktu, y=sig, mode="lines",
@@ -1179,17 +1137,48 @@ def build_fft_view(fft_latest):
         "sampling_frequency": sampling_frequency,
         "resolution_fft": resolution_fft,
         "nyquist": nyquist,
-        "metode": (f"Welch ({n_seg} segmen x {seg_len} titik)"
-                   if spec_method == "Welch" else "FFT biasa"),
+        "spectra": spectra,
         "figs_time": figs_time,
         "figs_fft": figs_fft,
         "caption": (
             f"FFT ID: {fft_id} | Data diterima: {fft_time} | "
             f"Titik data: {n_fft} | "
-            f"Metode: {'Welch, ' + str(n_seg) + ' segmen x ' + str(seg_len) + ' titik' if spec_method == 'Welch' else 'FFT biasa'} | "
             f"Resolusi frekuensi: {resolution_fft:.2f} Hz"
         ),
     }
+
+
+def build_harmonic_table(view, rpm):
+    """Tabel amplitudo spektrum di 1x, 2x, 3x RPM untuk tiap sumbu.
+    Nilai diambil sebagai amplitudo maksimum di sekitar frekuensi harmonik
+    (toleransi = maksimum dari 1 resolusi FFT atau 5% dari frekuensi 1x),
+    karena RPM jarang tepat jatuh di satu bin FFT."""
+
+    one_x = rpm / 60.0
+    res = view["resolution_fft"]
+    nyquist = view["nyquist"]
+    tol = max(res, 0.05 * one_x)
+
+    rows = []
+    for k in (1, 2, 3):
+        target = one_x * k
+        row = {
+            "Harmonik": f"{k}× RPM",
+            "Frekuensi (Hz)": f"{target:.2f}",
+        }
+        for (nama, arah), (f, amp) in zip(SUMBU, view["spectra"]):
+            col = f"{nama} ({arah}) [mm/s²]"
+            if target <= 0 or target > nyquist:
+                row[col] = "-"
+                continue
+            mask = np.abs(f - target) <= tol
+            if not np.any(mask):
+                row[col] = "-"
+            else:
+                row[col] = f"{float(np.max(amp[mask])):.4f}"
+        rows.append(row)
+
+    return pd.DataFrame(rows)
 
 
 # ---- Ambil data hanya jika ada FFT baru ----
@@ -1212,8 +1201,7 @@ fft_latest = st.session_state.get("fft_raw")
 # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
 if fft_latest is not None:
     fft_sig = (
-        fft_latest["id"], spec_method, welch_nperseg,
-        fft_y_auto, fft_y_manual
+        fft_latest["id"], fft_y_auto, fft_y_manual
     )
     if st.session_state.get("fft_sig") != fft_sig:
         try:
@@ -1244,21 +1232,28 @@ else:
     c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
     c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
 
-    cols = st.columns(3)
-    for col, fig, k in zip(cols, view["figs_time"], "xyz"):
-        with col:
-            st.plotly_chart(
-                fig, use_container_width=True, theme=None,
-                config=PLOT_CFG, key=f"time_{k}"
-            )
+    # ---- Tabel nilai 1x, 2x, 3x RPM tiap sumbu ----
+    st.subheader("Nilai Harmonik 1×, 2×, 3× RPM")
+    st.dataframe(
+        build_harmonic_table(view, rpm),
+        use_container_width=True,
+        hide_index=True
+    )
+    st.caption(
+        f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.2f} Hz). "
+        "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
+    )
 
-    cols = st.columns(3)
-    for col, fig, k in zip(cols, view["figs_fft"], "xyz"):
-        with col:
-            st.plotly_chart(
-                fig, use_container_width=True, theme=None,
-                config=PLOT_CFG, key=f"fft_{k}"
-            )
+    # ---- Grafik disusun ke bawah: Waktu -> Frekuensi untuk tiap sumbu ----
+    for k, fig_t, fig_f in zip("xyz", view["figs_time"], view["figs_fft"]):
+        st.plotly_chart(
+            fig_t, use_container_width=True, theme=None,
+            config=PLOT_CFG, key=f"time_{k}"
+        )
+        st.plotly_chart(
+            fig_f, use_container_width=True, theme=None,
+            config=PLOT_CFG, key=f"fft_{k}"
+        )
 
     st.caption(view["caption"])
 
