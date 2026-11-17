@@ -1004,6 +1004,59 @@ if page == PAGE_MON:
                         )
 
 
+    # =========================================================
+    # GRAFIK TREN RPM & VELOCITY RMS
+    # =========================================================
+    st.divider()
+
+    df_plot = (
+        df
+        .sort_values("id")
+        .tail(50)
+    )
+
+    colg1, colg2 = st.columns(2)
+
+    with colg1:
+
+        fig_rpm = px.line(
+            df_plot,
+            x="TIME",
+            y="RPM",
+            markers=True
+        )
+
+        fig_rpm.update_layout(
+            title="Grafik RPM",
+            xaxis_title="Waktu",
+            yaxis_title="RPM"
+        )
+
+        st.plotly_chart(
+            fig_rpm,
+            use_container_width=True
+        )
+
+    with colg2:
+
+        fig_vib = px.line(
+            df_plot,
+            x="TIME",
+            y=["VRMSX", "VRMSY", "VRMSZ"],
+            markers=True
+        )
+
+        fig_vib.update_layout(
+            title="Grafik Getaran - Velocity RMS",
+            xaxis_title="Waktu",
+            yaxis_title="velocity RMS (mm/s)"
+        )
+
+        st.plotly_chart(
+            fig_vib,
+            use_container_width=True
+        )
+
 
 # =========================================================
 # FFT ANALYSIS
