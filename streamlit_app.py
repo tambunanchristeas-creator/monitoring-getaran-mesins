@@ -152,24 +152,17 @@ supabase = create_client(
 if "last_click" not in st.session_state:
     st.session_state.last_click = 0
 
-# ---- Pengaturan sumbu Y grafik FFT (m/s2) ----
-st.sidebar.header("📈 Grafik FFT")
+# ---- Menu navigasi ----
+PAGE_MON = "📟 Monitoring"
+PAGE_FFT = "📊 Analisis FFT Getaran"
+PAGE_HIST = "🗂️ Riwayat Data Monitoring"
 
-fft_y_auto = st.sidebar.checkbox(
-    "Batas Y otomatis",
-    value=False,
-    key="fft_y_auto"
-)
-
-fft_y_manual = st.sidebar.number_input(
-    "Batas maksimal sumbu Y FFT (mm/s²)",
-    min_value=0.001,
-    max_value=1000.0,
-    value=1.0,
-    step=0.1,
-    format="%.3f",
-    disabled=fft_y_auto,
-    key="fft_y_manual"
+st.sidebar.header("☰ Menu")
+page = st.sidebar.radio(
+    "Pilih halaman",
+    [PAGE_MON, PAGE_FFT, PAGE_HIST],
+    key="page",
+    label_visibility="collapsed"
 )
 
 
@@ -439,578 +432,577 @@ except Exception:
 
 
 # =========================================================
-# HEADER
+# HALAMAN 1 : MONITORING
 # =========================================================
-st.markdown("""
-<h1 style='text-align:center'>
-⚙️ INDUSTRIAL MACHINE MONITORING ⚙️
-</h1>
+if page == PAGE_MON:
 
-<p style='text-align:center'>
-PLC • ESP32 • IoT • REALTIME SYSTEM
-</p>
-""", unsafe_allow_html=True)
+    # =========================================================
+    # HEADER
+    # =========================================================
+    st.markdown("""
+    <h1 style='text-align:center'>
+    ⚙️ INDUSTRIAL MACHINE MONITORING ⚙️
+    </h1>
 
-
-# =========================================================
-# INFO DATA TERBARU
-# =========================================================
-st.markdown(
-    f"""
-    <p style='text-align:center;color:#94a3b8'>
-    Data terakhir diterima: {latest["TIME"]}
+    <p style='text-align:center'>
+    PLC • ESP32 • IoT • REALTIME SYSTEM
     </p>
-    """,
-    unsafe_allow_html=True
-)
+    """, unsafe_allow_html=True)
 
-# =========================================================
-# DASHBOARD UTAMA
-# =========================================================
 
-col_left, col_right = st.columns(
-    [1, 1.45],
-    gap="medium"
-)
-
-
-# =========================================================
-# RPM GAUGE
-# =========================================================
-
-with col_left:
-
-    fig_gauge = go.Figure(
-        go.Indicator(
-            mode="gauge+number",
-            value=rpm,
-
-            title={
-                "text": "RPM Mesin",
-                "font": {
-                    "size": 22,
-                    "color": "white"
-                }
-            },
-
-            number={
-                "valueformat": ".0f",
-                "font": {
-                    "size": 64,
-                    "color": "white"
-                }
-            },
-
-            gauge={
-
-                "axis": {
-                    "range": [0, 2500],
-
-                    "tickmode": "array",
-
-                    "tickvals": [
-                        0,
-                        500,
-                        1000,
-                        1500,
-                        2000,
-                        2500
-                    ],
-
-                    "tickfont": {
-                        "color": "white",
-                        "size": 13
-                    }
-                },
-
-                "bar": {
-                    "color": "#4C9F38",
-                    "thickness": 0.25
-                },
-
-                "bgcolor": "#0f172a",
-
-                "borderwidth": 0,
-
-                "steps": [
-
-                    {
-                        "range": [0, 833],
-                        "color": "#0000FF"
-                    },
-
-                    {
-                        "range": [833, 1666],
-                        "color": "#3A7D20"
-                    },
-
-                    {
-                        "range": [1666, 2083],
-                        "color": "#FFFF00"
-                    },
-
-                    {
-                        "range": [2083, 2500],
-                        "color": "#FF2B1A"
-                    }
-                ],
-
-                "threshold": {
-
-                    "line": {
-                        "color": "white",
-                        "width": 4
-                    },
-
-                    "thickness": 0.8,
-
-                    "value": rpm
-                }
-            }
-        )
-    )
-
-
-    fig_gauge.update_layout(
-
-        height=560,
-
-        margin=dict(
-            l=40,
-            r=80,
-            t=70,
-            b=40
-        ),
-
-        paper_bgcolor="#0f172a",
-
-        plot_bgcolor="#0f172a",
-
-        font=dict(
-            color="white"
-        )
-    )
-
-
-    # =====================================================
-    # INDIKATOR UNIT RPM
-    # =====================================================
-
-    fig_gauge.add_shape(
-
-        type="rect",
-
-        xref="paper",
-        yref="paper",
-
-        x0=0.445,
-        x1=0.475,
-
-        y0=0.20,
-        y1=0.18,
-
-        fillcolor="#4C9F38",
-
-        line=dict(
-            color="#4C9F38",
-            width=1
-        )
-    )
-
-
-    fig_gauge.add_annotation(
-
-        x=0.485,
-        y=0.19,
-
-        xref="paper",
-        yref="paper",
-
-        text="RPM",
-
-        showarrow=False,
-
-        font=dict(
-            color="#FFFFFF",
-            size=14,
-            family="Arial"
-        ),
-
-        xanchor="left",
-
-        yanchor="middle"
-    )
-
-
-    st.plotly_chart(
-
-        fig_gauge,
-
-        use_container_width=True,
-
-        config={
-            "displayModeBar": False
-        }
-    )
-
-
-# =========================================================
-# PANEL GETARAN
-# =========================================================
-
-with col_right:
-
-    st.markdown(
-        """
-<div class="monitor-panel">
-    <div class="panel-title">
-        Velocity RMS
-    </div>
-</div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-    # =====================================================
-    # VELOCITY RMS X Y Z
-    # =====================================================
-
-    vx, vy, vz = st.columns(3)
-
-
-    with vx:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Velocity RMS Radial (X)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="value-number">
-                {velocity_rms_x:.2f}
-                <span>mm/s</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-
-    with vy:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Velocity RMS Axial (Y)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="value-number">
-                {velocity_rms_y:.2f}
-                <span>mm/s</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-
-    with vz:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Velocity RMS Radial (Z)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="value-number">
-                {velocity_rms_z:.2f}
-                <span>mm/s</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-
-    # =====================================================
-    # GARIS PEMISAH
-    # =====================================================
-
-    st.markdown(
-        "<hr class='panel-line'>",
-        unsafe_allow_html=True
-    )
-
-
-    # =====================================================
-    # ACCELERATION RMS
-    # =====================================================
-
-    st.markdown(
-        """
-        <div class="section-title">
-            Acceleration RMS
-        </div>
-        """,
-
-        unsafe_allow_html=True
-    )
-
-
-    ax, ay, az = st.columns(3)
-
-
-    with ax:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Acceleration Radial (X)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="acc-number">
-                {acceleration_rms_x:.2f}
-                <span>mm/s²</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-
-    with ay:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Acceleration Axial (Y)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="acc-number">
-                {acceleration_rms_y:.2f}
-                <span>mm/s²</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-
-    with az:
-
-        st.markdown(
-            """
-            <div class="value-label">
-                Acceleration Radial (Z)
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-        st.markdown(
-            f"""
-            <div class="acc-number">
-                {acceleration_rms_z:.2f}
-                <span>mm/s²</span>
-            </div>
-            """,
-
-            unsafe_allow_html=True
-        )
-
-    # =====================================================
-    # STATUS
-    # =====================================================
-
-    if status == "GOOD":
-
-        status_color = "#22c55e"
-
-    elif status == "WARNING":
-
-        status_color = "#facc15"
-
-    elif status == "DANGER":
-
-        status_color = "#ef4444"
-
-    else:
-
-        status_color = "#94a3b8"
-
-
+    # =========================================================
+    # INFO DATA TERBARU
+    # =========================================================
     st.markdown(
         f"""
-    <div class="status-box">
-        <span>Status:</span>
-        <b style="color:{status_color}">{status}</b>
-    </div>
+        <p style='text-align:center;color:#94a3b8'>
+        Data terakhir diterima: {latest["TIME"]}
+        </p>
         """,
         unsafe_allow_html=True
     )
 
+    # =========================================================
+    # DASHBOARD UTAMA
+    # =========================================================
 
-    # =====================================================
-    # KONTROL MESIN
-    # =====================================================
+    col_left, col_right = st.columns(
+        [1, 1.45],
+        gap="medium"
+    )
 
-    if status == "WARNING":
 
-        st.markdown(
-            "### ⚙️ Kontrol Mesin"
+    # =========================================================
+    # RPM GAUGE
+    # =========================================================
+
+    with col_left:
+
+        fig_gauge = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=rpm,
+
+                title={
+                    "text": "RPM Mesin",
+                    "font": {
+                        "size": 22,
+                        "color": "white"
+                    }
+                },
+
+                number={
+                    "valueformat": ".0f",
+                    "font": {
+                        "size": 64,
+                        "color": "white"
+                    }
+                },
+
+                gauge={
+
+                    "axis": {
+                        "range": [0, 2500],
+
+                        "tickmode": "array",
+
+                        "tickvals": [
+                            0,
+                            500,
+                            1000,
+                            1500,
+                            2000,
+                            2500
+                        ],
+
+                        "tickfont": {
+                            "color": "white",
+                            "size": 13
+                        }
+                    },
+
+                    "bar": {
+                        "color": "#4C9F38",
+                        "thickness": 0.25
+                    },
+
+                    "bgcolor": "#0f172a",
+
+                    "borderwidth": 0,
+
+                    "steps": [
+
+                        {
+                            "range": [0, 833],
+                            "color": "#0000FF"
+                        },
+
+                        {
+                            "range": [833, 1666],
+                            "color": "#3A7D20"
+                        },
+
+                        {
+                            "range": [1666, 2083],
+                            "color": "#FFFF00"
+                        },
+
+                        {
+                            "range": [2083, 2500],
+                            "color": "#FF2B1A"
+                        }
+                    ],
+
+                    "threshold": {
+
+                        "line": {
+                            "color": "white",
+                            "width": 4
+                        },
+
+                        "thickness": 0.8,
+
+                        "value": rpm
+                    }
+                }
+            )
         )
 
 
-        col_btn1, col_btn2 = st.columns(2)
+        fig_gauge.update_layout(
+
+            height=560,
+
+            margin=dict(
+                l=40,
+                r=80,
+                t=70,
+                b=40
+            ),
+
+            paper_bgcolor="#0f172a",
+
+            plot_bgcolor="#0f172a",
+
+            font=dict(
+                color="white"
+            )
+        )
 
 
-        # =================================================
-        # STOP MESIN
-        # =================================================
+        # =====================================================
+        # INDIKATOR UNIT RPM
+        # =====================================================
 
-        with col_btn1:
+        fig_gauge.add_shape(
 
-            if st.button(
-                "🛑 MATIKAN MESIN",
-                use_container_width=True
-            ):
+            type="rect",
 
-                if (
-                    time.time()
-                    -
-                    st.session_state.last_click
-                    > 2
+            xref="paper",
+            yref="paper",
+
+            x0=0.445,
+            x1=0.475,
+
+            y0=0.20,
+            y1=0.18,
+
+            fillcolor="#4C9F38",
+
+            line=dict(
+                color="#4C9F38",
+                width=1
+            )
+        )
+
+
+        fig_gauge.add_annotation(
+
+            x=0.485,
+            y=0.19,
+
+            xref="paper",
+            yref="paper",
+
+            text="RPM",
+
+            showarrow=False,
+
+            font=dict(
+                color="#FFFFFF",
+                size=14,
+                family="Arial"
+            ),
+
+            xanchor="left",
+
+            yanchor="middle"
+        )
+
+
+        st.plotly_chart(
+
+            fig_gauge,
+
+            use_container_width=True,
+
+            config={
+                "displayModeBar": False
+            }
+        )
+
+
+    # =========================================================
+    # PANEL GETARAN
+    # =========================================================
+
+    with col_right:
+
+        st.markdown(
+            """
+    <div class="monitor-panel">
+        <div class="panel-title">
+            Velocity RMS
+        </div>
+    </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        # =====================================================
+        # VELOCITY RMS X Y Z
+        # =====================================================
+
+        vx, vy, vz = st.columns(3)
+
+
+        with vx:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Velocity RMS Radial (X)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="value-number">
+                    {velocity_rms_x:.2f}
+                    <span>mm/s</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+
+        with vy:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Velocity RMS Axial (Y)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="value-number">
+                    {velocity_rms_y:.2f}
+                    <span>mm/s</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+
+        with vz:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Velocity RMS Radial (Z)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="value-number">
+                    {velocity_rms_z:.2f}
+                    <span>mm/s</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+
+        # =====================================================
+        # GARIS PEMISAH
+        # =====================================================
+
+        st.markdown(
+            "<hr class='panel-line'>",
+            unsafe_allow_html=True
+        )
+
+
+        # =====================================================
+        # ACCELERATION RMS
+        # =====================================================
+
+        st.markdown(
+            """
+            <div class="section-title">
+                Acceleration RMS
+            </div>
+            """,
+
+            unsafe_allow_html=True
+        )
+
+
+        ax, ay, az = st.columns(3)
+
+
+        with ax:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Acceleration Radial (X)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="acc-number">
+                    {acceleration_rms_x:.2f}
+                    <span>mm/s²</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+
+        with ay:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Acceleration Axial (Y)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="acc-number">
+                    {acceleration_rms_y:.2f}
+                    <span>mm/s²</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+
+        with az:
+
+            st.markdown(
+                """
+                <div class="value-label">
+                    Acceleration Radial (Z)
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+            st.markdown(
+                f"""
+                <div class="acc-number">
+                    {acceleration_rms_z:.2f}
+                    <span>mm/s²</span>
+                </div>
+                """,
+
+                unsafe_allow_html=True
+            )
+
+        # =====================================================
+        # STATUS
+        # =====================================================
+
+        if status == "GOOD":
+
+            status_color = "#22c55e"
+
+        elif status == "WARNING":
+
+            status_color = "#facc15"
+
+        elif status == "DANGER":
+
+            status_color = "#ef4444"
+
+        else:
+
+            status_color = "#94a3b8"
+
+
+        st.markdown(
+            f"""
+        <div class="status-box">
+            <span>Status:</span>
+            <b style="color:{status_color}">{status}</b>
+        </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+
+        # =====================================================
+        # KONTROL MESIN
+        # =====================================================
+
+        if status == "WARNING":
+
+            st.markdown(
+                "### ⚙️ Kontrol Mesin"
+            )
+
+
+            col_btn1, col_btn2 = st.columns(2)
+
+
+            # =================================================
+            # STOP MESIN
+            # =================================================
+
+            with col_btn1:
+
+                if st.button(
+                    "🛑 MATIKAN MESIN",
+                    use_container_width=True
                 ):
 
-                    st.session_state.last_click = (
+                    if (
                         time.time()
-                    )
+                        -
+                        st.session_state.last_click
+                        > 2
+                    ):
 
-
-                    try:
-
-                        (
-                            supabase
-                            .table("control")
-                            .update({
-                                "D5": 0
-                            })
-                            .eq("id", 1)
-                            .execute()
+                        st.session_state.last_click = (
+                            time.time()
                         )
 
 
-                        st.success(
-                            "Perintah STOP dikirim!"
+                        try:
+
+                            (
+                                supabase
+                                .table("control")
+                                .update({
+                                    "D5": 0
+                                })
+                                .eq("id", 1)
+                                .execute()
+                            )
+
+
+                            st.success(
+                                "Perintah STOP dikirim!"
+                            )
+
+
+                        except Exception as e:
+
+                            st.error(
+                                f"Gagal: {e}"
+                            )
+
+
+                    else:
+
+                        st.warning(
+                            "Tunggu 2 detik sebelum klik lagi"
                         )
 
 
-                    except Exception as e:
+            # =================================================
+            # RUN MESIN
+            # =================================================
 
-                        st.error(
-                            f"Gagal: {e}"
-                        )
+            with col_btn2:
 
-
-                else:
-
-                    st.warning(
-                        "Tunggu 2 detik sebelum klik lagi"
-                    )
-
-
-        # =================================================
-        # RUN MESIN
-        # =================================================
-
-        with col_btn2:
-
-            if st.button(
-                "▶️ HIDUPKAN MESIN",
-                use_container_width=True
-            ):
-
-                if (
-                    time.time()
-                    -
-                    st.session_state.last_click
-                    > 2
+                if st.button(
+                    "▶️ HIDUPKAN MESIN",
+                    use_container_width=True
                 ):
 
-                    st.session_state.last_click = (
+                    if (
                         time.time()
-                    )
+                        -
+                        st.session_state.last_click
+                        > 2
+                    ):
 
-
-                    try:
-
-                        (
-                            supabase
-                            .table("control")
-                            .update({
-                                "D5": 1
-                            })
-                            .eq("id", 1)
-                            .execute()
+                        st.session_state.last_click = (
+                            time.time()
                         )
 
 
-                        st.success(
-                            "Perintah RUN dikirim!"
+                        try:
+
+                            (
+                                supabase
+                                .table("control")
+                                .update({
+                                    "D5": 1
+                                })
+                                .eq("id", 1)
+                                .execute()
+                            )
+
+
+                            st.success(
+                                "Perintah RUN dikirim!"
+                            )
+
+
+                        except Exception as e:
+
+                            st.error(
+                                f"Gagal: {e}"
+                            )
+
+
+                    else:
+
+                        st.warning(
+                            "Tunggu 2 detik sebelum klik lagi"
                         )
 
-
-                    except Exception as e:
-
-                        st.error(
-                            f"Gagal: {e}"
-                        )
-
-
-                else:
-
-                    st.warning(
-                        "Tunggu 2 detik sebelum klik lagi"
-                    )
-
-
-# =========================================================
-# PEMISAH KE FFT
-# =========================================================
-
-st.divider()
 
 
 # =========================================================
@@ -1181,167 +1173,123 @@ def build_harmonic_table(view, rpm):
     return pd.DataFrame(rows)
 
 
-# ---- Ambil data hanya jika ada FFT baru ----
-latest_fft_id = load_fft_latest_id()
+# =========================================================
+# HALAMAN 2 : ANALISIS FFT GETARAN
+# =========================================================
+if page == PAGE_FFT:
 
-if (
-    latest_fft_id is not None
-    and (
-        "fft_raw" not in st.session_state
-        or st.session_state.get("fft_raw_id") != latest_fft_id
+    # ---- Pengaturan sumbu Y grafik FFT ----
+    st.sidebar.header("📈 Grafik FFT")
+
+    fft_y_auto = st.sidebar.checkbox(
+        "Batas Y otomatis",
+        value=False,
+        key="fft_y_auto"
     )
-):
-    new_raw = load_fft_data()
-    if new_raw is not None:
-        st.session_state.fft_raw = new_raw
-        st.session_state.fft_raw_id = new_raw["id"]
 
-fft_latest = st.session_state.get("fft_raw")
-
-# ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
-if fft_latest is not None:
-    fft_sig = (
-        fft_latest["id"], fft_y_auto, fft_y_manual
+    fft_y_manual = st.sidebar.number_input(
+        "Batas maksimal sumbu Y FFT (mm/s²)",
+        min_value=0.001,
+        max_value=1000.0,
+        value=1.0,
+        step=0.1,
+        format="%.3f",
+        disabled=fft_y_auto,
+        key="fft_y_manual"
     )
-    if st.session_state.get("fft_sig") != fft_sig:
-        try:
-            st.session_state.fft_view = build_fft_view(fft_latest)
-        except Exception as e:
-            st.session_state.fft_view = {"error": f"Gagal memproses FFT: {e}"}
-        st.session_state.fft_sig = fft_sig
 
-st.header("📊 Analisis FFT Getaran")
+    # ---- Ambil data hanya jika ada FFT baru ----
+    latest_fft_id = load_fft_latest_id()
 
-view = st.session_state.get("fft_view")
+    if (
+        latest_fft_id is not None
+        and (
+            "fft_raw" not in st.session_state
+            or st.session_state.get("fft_raw_id") != latest_fft_id
+        )
+    ):
+        new_raw = load_fft_data()
+        if new_raw is not None:
+            st.session_state.fft_raw = new_raw
+            st.session_state.fft_raw_id = new_raw["id"]
 
-if fft_latest is None or view is None:
+    fft_latest = st.session_state.get("fft_raw")
 
-    st.warning("Belum ada data FFT dari PLC.")
+    # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
+    if fft_latest is not None:
+        fft_sig = (
+            fft_latest["id"], fft_y_auto, fft_y_manual
+        )
+        if st.session_state.get("fft_sig") != fft_sig:
+            try:
+                st.session_state.fft_view = build_fft_view(fft_latest)
+            except Exception as e:
+                st.session_state.fft_view = {"error": f"Gagal memproses FFT: {e}"}
+            st.session_state.fft_sig = fft_sig
 
-elif view["error"]:
+    st.header("📊 Analisis FFT Getaran")
 
-    st.error(view["error"])
+    view = st.session_state.get("fft_view")
 
-else:
+    if fft_latest is None or view is None:
 
-    PLOT_CFG = {"displayModeBar": False}
+        st.warning("Belum ada data FFT dari PLC.")
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Jumlah Sampel", view["sample_count"])
-    c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
-    c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
-    c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
+    elif view["error"]:
 
-    # ---- Tabel nilai 1x, 2x, 3x RPM tiap sumbu ----
-    st.subheader("Nilai Harmonik 1×, 2×, 3× RPM")
+        st.error(view["error"])
+
+    else:
+
+        PLOT_CFG = {"displayModeBar": False}
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Jumlah Sampel", view["sample_count"])
+        c2.metric("Sampling", f"{view['sampling_frequency']:.0f} Hz")
+        c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
+        c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
+
+        # ---- Tabel nilai 1x, 2x, 3x RPM tiap sumbu ----
+        st.subheader("Nilai Harmonik 1×, 2×, 3× RPM")
+        st.dataframe(
+            build_harmonic_table(view, rpm),
+            use_container_width=True,
+            hide_index=True
+        )
+        st.caption(
+            f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.2f} Hz). "
+            "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
+        )
+
+        # ---- Tiap sumbu satu baris: Domain Waktu (kiri) | Domain Frekuensi (kanan) ----
+        for k, fig_t, fig_f in zip("xyz", view["figs_time"], view["figs_fft"]):
+            col_t, col_f = st.columns(2)
+            with col_t:
+                st.plotly_chart(
+                    fig_t, use_container_width=True, theme=None,
+                    config=PLOT_CFG, key=f"time_{k}"
+                )
+            with col_f:
+                st.plotly_chart(
+                    fig_f, use_container_width=True, theme=None,
+                    config=PLOT_CFG, key=f"fft_{k}"
+                )
+
+        st.caption(view["caption"])
+
+
+# =========================================================
+# HALAMAN 3 : RIWAYAT DATA MONITORING
+# =========================================================
+elif page == PAGE_HIST:
+
+    st.header("🗂️ Riwayat Data Monitoring")
+
     st.dataframe(
-        build_harmonic_table(view, rpm),
+        df.sort_values(
+            "id",
+            ascending=False
+        ),
         use_container_width=True,
         hide_index=True
     )
-    st.caption(
-        f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.2f} Hz). "
-        "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
-    )
-
-    # ---- Tiap sumbu satu baris: Domain Waktu (kiri) | Domain Frekuensi (kanan) ----
-    for k, fig_t, fig_f in zip("xyz", view["figs_time"], view["figs_fft"]):
-        col_t, col_f = st.columns(2)
-        with col_t:
-            st.plotly_chart(
-                fig_t, use_container_width=True, theme=None,
-                config=PLOT_CFG, key=f"time_{k}"
-            )
-        with col_f:
-            st.plotly_chart(
-                fig_f, use_container_width=True, theme=None,
-                config=PLOT_CFG, key=f"fft_{k}"
-            )
-
-    st.caption(view["caption"])
-
-# =========================================================
-# DATA UNTUK GRAFIK
-# =========================================================
-
-df_plot = (
-    df
-    .sort_values("id")
-    .tail(50)
-)
-
-
-# =========================================================
-# GRAFIK
-# =========================================================
-colg1, colg2 = st.columns(2)
-
-
-# =========================================================
-# GRAFIK RPM
-# =========================================================
-with colg1:
-
-    fig_rpm = px.line(
-        df_plot,
-        x="TIME",
-        y="RPM",
-        markers=True
-    )
-
-    fig_rpm.update_layout(
-        title="Grafik RPM",
-        xaxis_title="Waktu",
-        yaxis_title="RPM"
-    )
-
-    st.plotly_chart(
-        fig_rpm,
-        use_container_width=True
-    )
-
-
-# =========================================================
-# GRAFIK GETARAN
-# =========================================================
-with colg2:
-
-    fig_vib = px.line(
-        df_plot,
-        x="TIME",
-        y=["VRMSX", "VRMSY", "VRMSZ"],
-        markers=True,
-        title="Grafik Velocity RMS X, Y, dan Z"
-    )
-
-    fig_vib.update_layout(
-        title="Grafik Getaran - Velocity RMS",
-        xaxis_title="Waktu",
-        yaxis_title="velocity RMS (mm/s)"
-    )
-
-    st.plotly_chart(
-        fig_vib,
-        use_container_width=True
-    )
-
-
-st.divider()
-
-
-# =========================================================
-# TABEL
-# =========================================================
-st.subheader(
-    "Data Monitoring"
-)
-
-
-st.dataframe(
-    df.sort_values(
-        "id",
-        ascending=False
-    ),
-    use_container_width=True,
-    hide_index=True
-)
