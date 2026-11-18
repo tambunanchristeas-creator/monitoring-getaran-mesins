@@ -1209,7 +1209,7 @@ def build_harmonic_table(view, rpm):
         target = one_x * k
         row = {
             "Harmonik": f"{k}× RPM",
-            "Frekuensi (Hz)": f"{target:.2f}",
+            "Frekuensi (Hz)": f"{target:.1f}",
         }
         for (nama, arah), (f, amp) in zip(SUMBU, view["spectra"]):
             col = f"{nama} ({arah}) [mm/s²]"
@@ -1220,7 +1220,7 @@ def build_harmonic_table(view, rpm):
             if not np.any(mask):
                 row[col] = "-"
             else:
-                row[col] = f"{float(np.max(amp[mask])):.4f}"
+                row[col] = f"{float(np.max(amp[mask])):.1f}"
         rows.append(row)
 
     return pd.DataFrame(rows)
@@ -1310,7 +1310,7 @@ if page == PAGE_FFT:
             hide_index=True
         )
         st.caption(
-            f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.2f} Hz). "
+            f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.1f} Hz). "
             "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
         )
 
