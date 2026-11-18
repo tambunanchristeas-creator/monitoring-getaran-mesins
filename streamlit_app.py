@@ -1220,7 +1220,7 @@ def build_harmonic_table(view, rpm):
             if not np.any(mask):
                 row[col] = "-"
             else:
-                row[col] = f"{float(np.max(amp[mask])):.1f}"
+                row[col] = f"{float(np.max(amp[mask])):.4f}"
         rows.append(row)
 
     return pd.DataFrame(rows)
