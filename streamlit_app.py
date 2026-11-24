@@ -6,6 +6,7 @@ import plotly.graph_objects as go
 import numpy as np
 import time
 import json
+import os
 from streamlit_autorefresh import st_autorefresh
 
 
@@ -136,9 +137,24 @@ button[kind="secondary"] {
 # =========================================================
 # SUPABASE
 # =========================================================
-SUPABASE_URL = "https://qpefflvoxwtbqssimbev.supabase.co"
+def _get_secret(name):
+    """Ambil nilai rahasia dari st.secrets (.streamlit/secrets.toml)
+    atau dari variabel lingkungan. Kunci TIDAK ditulis di kode."""
+    try:
+        return st.secrets[name]
+    except Exception:
+        return os.environ.get(name)
 
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwZWZmbHZveHd0YnFzc2ltYmV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA2MzIzODUsImV4cCI6MjA4NjIwODM4NX0.tG6y6MoAvdgIOPHAYTpDJ-GO8pLIRrEn5vmsSo1PZFo"
+
+SUPABASE_URL = _get_secret("SUPABASE_URL") or "https://qpefflvoxwtbqssimbev.supabase.co"
+SUPABASE_KEY = _get_secret("SUPABASE_KEY")
+
+if not SUPABASE_KEY:
+    st.error(
+        "SUPABASE_KEY belum diatur. Isi di .streamlit/secrets.toml "
+        "(SUPABASE_KEY = \"...\") atau sebagai variabel lingkungan."
+    )
+    st.stop()
 
 supabase = create_client(
     SUPABASE_URL,
@@ -1159,7 +1175,7 @@ def build_fft_view(fft_latest):
         ))
         ft = style_fig(
             ft, f"Domain Waktu {nama} ({arah}) {ts}",
-            "Waktu (detik)", "Amplitudo (mm/s²)"
+            "Waktu (detik)", "Amplitudo (m/s²)"
         )
         ft.update_xaxes(range=[0, waktu[-1]])
         figs_time.append(ft)
@@ -1170,7 +1186,7 @@ def build_fft_view(fft_latest):
         ))
         ff = style_fig(
             ff, f"Domain Frekuensi {nama} ({arah}) {ts}",
-            "Frekuensi (Hz)", "Magnitudo (mm/s²)"
+            "Frekuensi (Hz)", "Magnitudo (m/s²)"
         )
         ff.update_xaxes(range=[0, nyquist], tick0=0, dtick=10)
         ff.update_yaxes(range=[0, y_top], autorange=False, fixedrange=True)
@@ -1193,36 +1209,129 @@ def build_fft_view(fft_latest):
     }
 
 
-def build_harmonic_table(view, rpm):
-    """Tabel amplitudo spektrum di 1x, 2x, 3x RPM untuk tiap sumbu.
-    Nilai diambil sebagai amplitudo maksimum di sekitar frekuensi harmonik
-    (toleransi = maksimum dari 1 resolusi FFT atau 5% dari frekuensi 1x),
-    karena RPM jarang tepat jatuh di satu bin FFT."""
+# ---- Parameter deteksi puncak harmonik ----
+SLIP_LOW = 0.85          # jendela 1x: 85% .. 103% dari frekuensi nominal
+SLIP_HIGH = 1.03         # (slip motor AC / selisih setpoint VFD)
+PROMINENCE_MIN = 3.0     # puncak harus >= 3x median lantai noise sekitarnya
+MAINS_HZ = 50.0          # frekuensi jala-jala (diberi tanda peringatan)
 
-    one_x = rpm / 60.0
+
+def _parabola(f, a, i):
+    """Interpolasi parabola 3 titik di sekitar bin i -> (frekuensi, amplitudo)."""
+    if i <= 0 or i >= len(a) - 1:
+        return float(f[i]), float(a[i])
+    y0, y1, y2 = a[i - 1], a[i], a[i + 1]
+    den = y0 - 2 * y1 + y2
+    if den == 0:
+        return float(f[i]), float(y1)
+    d = 0.5 * (y0 - y2) / den
+    d = max(-1.0, min(1.0, d))
+    return float(f[i] + d * (f[1] - f[0])), float(y1 - 0.25 * (y0 - y2) * d)
+
+
+def _noise_floor(f, a, f0, half=10.0, excl=1.5):
+    """Median amplitudo di sekitar f0 (di luar +-excl Hz) sebagai lantai noise."""
+    m = (np.abs(f - f0) <= half) & (np.abs(f - f0) > excl)
+    return float(np.median(a[m])) if np.any(m) else 0.0
+
+
+def _peak(f, a, lo, hi):
+    """Puncak tertinggi di rentang [lo, hi] -> (frekuensi, amplitudo) atau None."""
+    m = np.where((f >= lo) & (f <= hi))[0]
+    if len(m) == 0:
+        return None
+    return _parabola(f, a, m[np.argmax(a[m])])
+
+
+def build_harmonic_table(view, rpm):
+    """1x, 2x, 3x diambil dari PUNCAK TERTINGGI di sekitar frekuensi harmonik.
+
+    - 1x dicari di jendela 85-103% dari rpm nominal pada jumlah amplitudo
+      tiga sumbu -> menghasilkan frekuensi putar (rpm) aktual. Bila puncaknya
+      tidak menonjol (< 3x noise), dipakai rpm nominal dan f1_jelas = False.
+    - 2x dan 3x dicari di sekitar k x (1x aktual).
+    - Frekuensi dan amplitudo puncak diperhalus dengan interpolasi parabola.
+    - "(lemah)" : puncak < 3x median noise sekitarnya (belum tentu harmonik).
+    - "50Hz"    : puncak jatuh di 50 Hz (bisa gangguan listrik).
+    Mengembalikan (DataFrame tabel, dict info)."""
+
+    sp = view["spectra"]
     res = view["resolution_fft"]
-    nyquist = view["nyquist"]
-    tol = max(res, 0.05 * one_x)
+    nyq = view["nyquist"]
+    f_nom = rpm / 60.0
+    f = sp[0][0]
+
+    asum = sum(a[:len(f)] for _, a in sp)
+    p1 = _peak(f, asum, SLIP_LOW * f_nom, SLIP_HIGH * f_nom) if f_nom > 0 else None
+    f1_jelas = False
+    if p1:
+        floor1 = _noise_floor(f, asum, p1[0])
+        f1_jelas = floor1 > 0 and p1[1] / floor1 >= PROMINENCE_MIN
+    # Jika puncak 1x tidak menonjol, pakai rpm nominal (bukan puncak noise)
+    f1 = p1[0] if (p1 and f1_jelas) else f_nom
 
     rows = []
     for k in (1, 2, 3):
-        target = one_x * k
+        target = f1 * k
+        tol = max(2 * res, 0.015 * target)
         row = {
-            "Harmonik": f"{k}× RPM",
-            "Frekuensi (Hz)": f"{target:.1f}",
+            "Harmonik": f"{k}×",
+            "Nominal (Hz)": f"{f_nom * k:.2f}",
+            "Puncak (Hz)": "-",
         }
-        for (nama, arah), (f, amp) in zip(SUMBU, view["spectra"]):
-            col = f"{nama} ({arah}) [mm/s²]"
-            if target <= 0 or target > nyquist:
+        found_f = None
+        for (nama, arah), (fa, aa) in zip(SUMBU, sp):
+            col = f"{nama} ({arah}) [m/s²]"
+            if target <= 0 or target > nyq:
                 row[col] = "-"
                 continue
-            mask = np.abs(f - target) <= tol
-            if not np.any(mask):
+            pk = _peak(fa, aa, target - tol, target + tol)
+            if pk is None:
                 row[col] = "-"
-            else:
-                row[col] = f"{float(np.max(amp[mask])):.4f}"
+                continue
+            fp, ap = pk
+            floor = _noise_floor(fa, aa, fp)
+            ok = floor > 0 and ap / floor >= PROMINENCE_MIN
+            txt = f"{ap:.4f}" + ("" if ok else " (lemah)")
+            if abs(fp - MAINS_HZ) <= 1.0:
+                txt += " 50Hz"
+            row[col] = txt
+            if found_f is None:
+                found_f = fp
+        if found_f is not None:
+            row["Puncak (Hz)"] = f"{found_f:.2f}"
         rows.append(row)
 
+    info = {
+        "rpm_aktual": 60.0 * f1,
+        "f1": f1,
+        "f1_jelas": f1_jelas,
+        "rpm_nominal": rpm,
+    }
+    return pd.DataFrame(rows), info
+
+
+def build_ratio_table(view, info):
+    """Rasio 2x/1x dan 3x/1x tiap sumbu (tidak terpengaruh skala amplitudo)."""
+    f1 = info["f1"]
+    res = view["resolution_fft"]
+    rows = []
+    for (nama, arah), (fa, aa) in zip(SUMBU, view["spectra"]):
+        amps = []
+        for k in (1, 2, 3):
+            if f1 <= 0:
+                amps.append(np.nan)
+                continue
+            tol = max(2 * res, 0.015 * k * f1)
+            pk = _peak(fa, aa, k * f1 - tol, k * f1 + tol)
+            amps.append(pk[1] if pk else np.nan)
+        a1, a2, a3 = amps
+        ok = np.isfinite(a1) and a1 > 0
+        rows.append({
+            "Sumbu": f"{nama} ({arah})",
+            "2× / 1×": f"{a2 / a1:.2f}" if ok and np.isfinite(a2) else "-",
+            "3× / 1×": f"{a3 / a1:.2f}" if ok and np.isfinite(a3) else "-",
+        })
     return pd.DataFrame(rows)
 
 
@@ -1241,7 +1350,7 @@ if page == PAGE_FFT:
     )
 
     fft_y_manual = st.sidebar.number_input(
-        "Batas maksimal sumbu Y FFT (mm/s²)",
+        "Batas maksimal sumbu Y FFT (m/s²)",
         min_value=0.001,
         max_value=1000.0,
         value=1.0,
@@ -1302,16 +1411,42 @@ if page == PAGE_FFT:
         c3.metric("Resolusi FFT", f"{view['resolution_fft']:.2f} Hz")
         c4.metric("Nyquist", f"{view['nyquist']:.1f} Hz")
 
-        # ---- Tabel nilai 1x, 2x, 3x RPM tiap sumbu ----
-        st.subheader("Nilai Harmonik 1×, 2×, 3× RPM")
+        # ---- Tabel nilai 1x, 2x, 3x (dari puncak tertinggi) tiap sumbu ----
+        tabel_harm, info_harm = build_harmonic_table(view, rpm)
+
+        st.subheader("Nilai Harmonik 1×, 2×, 3× (puncak tertinggi)")
+
+        h1, h2, h3 = st.columns(3)
+        h1.metric("RPM nominal (PLC)", f"{info_harm['rpm_nominal']:.0f}")
+        h2.metric(
+            "RPM aktual (puncak 1×)",
+            f"{info_harm['rpm_aktual']:.0f}" if info_harm["f1_jelas"]
+            else "tidak jelas"
+        )
+        if info_harm["rpm_nominal"] > 0 and info_harm["f1_jelas"]:
+            selisih = (
+                (info_harm["rpm_aktual"] - info_harm["rpm_nominal"])
+                / info_harm["rpm_nominal"] * 100.0
+            )
+            h3.metric("Selisih", f"{selisih:+.1f} %")
+
         st.dataframe(
-            build_harmonic_table(view, rpm),
+            tabel_harm,
             use_container_width=True,
             hide_index=True
         )
         st.caption(
-            f"RPM saat ini: {rpm:.0f} (1× = {one_x_frequency:.1f} Hz). "
-            "Nilai = amplitudo puncak spektrum di sekitar frekuensi harmonik."
+            "Nilai = amplitudo puncak tertinggi di sekitar 1×, 2×, 3× frekuensi "
+            "putar aktual. (lemah) = puncak kurang dari 3× lantai noise sekitarnya. "
+            "50Hz = puncak jatuh di 50 Hz (kemungkinan gangguan listrik, "
+            "bukan getaran mesin)."
+        )
+
+        st.subheader("Rasio Harmonik")
+        st.dataframe(
+            build_ratio_table(view, info_harm),
+            use_container_width=True,
+            hide_index=True
         )
 
         # ---- Tiap sumbu satu baris: Domain Waktu (kiri) | Domain Frekuensi (kanan) ----
