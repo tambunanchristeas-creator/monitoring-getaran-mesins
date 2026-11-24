@@ -1148,7 +1148,7 @@ def build_fft_view(fft_latest):
     signals = [a - np.mean(a) for a in acc]
 
     fft_y_max = 1.1 * max(float(np.max(s[1])) for s in spectra)
-    y_top = max(fft_y_max, 0.001) if fft_y_auto else fft_y_manual
+    y_top = max(fft_y_max, 0.001)
 
     figs_time, figs_fft = [], []
     for (nama, arah), sig, (f, amp) in zip(SUMBU, signals, spectra):
@@ -1231,26 +1231,6 @@ def build_harmonic_table(view, rpm):
 # =========================================================
 if page == PAGE_FFT:
 
-    # ---- Pengaturan sumbu Y grafik FFT ----
-    st.sidebar.header("📈 Grafik FFT")
-
-    fft_y_auto = st.sidebar.checkbox(
-        "Batas Y otomatis",
-        value=False,
-        key="fft_y_auto"
-    )
-
-    fft_y_manual = st.sidebar.number_input(
-        "Batas maksimal sumbu Y FFT (mm/s²)",
-        min_value=0.001,
-        max_value=1000.0,
-        value=1.0,
-        step=0.1,
-        format="%.3f",
-        disabled=fft_y_auto,
-        key="fft_y_manual"
-    )
-
     # ---- Ambil data hanya jika ada FFT baru ----
     latest_fft_id = load_fft_latest_id()
 
@@ -1270,9 +1250,7 @@ if page == PAGE_FFT:
 
     # ---- Bangun ulang grafik hanya jika data/pengaturan berubah ----
     if fft_latest is not None:
-        fft_sig = (
-            fft_latest["id"], fft_y_auto, fft_y_manual
-        )
+        fft_sig = (fft_latest["id"],)
         if st.session_state.get("fft_sig") != fft_sig:
             try:
                 st.session_state.fft_view = build_fft_view(fft_latest)
