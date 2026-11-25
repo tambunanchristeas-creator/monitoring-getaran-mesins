@@ -262,27 +262,23 @@ if df.empty:
 
     st.stop()
 
-def calculate_spectrum(data, sampling_frequency, nperseg=1024, overlap=0.5):
-    """Amplitudo puncak, Hann window, dirata-rata dari beberapa segmen (Welch)."""
+def calculate_spectrum(data, sampling_frequency):
+    """Amplitudo puncak (sinusoida amplitudo A -> A) dengan jendela Hanning,
+    menggunakan satu FFT atas seluruh data."""
+
     x = np.asarray(data, dtype=float)
     n = len(x)
+
     if n < 4:
         return None, None
 
-    nperseg = min(nperseg, n)
-    step = max(1, int(nperseg * (1 - overlap)))
-    window = np.hanning(nperseg)
+    x = x - np.mean(x)          # buang DC offset
 
-    power = np.zeros(nperseg // 2 + 1)
-    count = 0
-    for start in range(0, n - nperseg + 1, step):
-        seg = x[start:start + nperseg]
-        seg = seg - np.mean(seg)
-        power += np.abs(np.fft.rfft(seg * window)) ** 2
-        count += 1
+    window = np.hanning(n)
+    spectrum = np.fft.rfft(x * window)
+    freq = np.fft.rfftfreq(n, d=1.0 / sampling_frequency)
+    amplitude = (2.0 / np.sum(window)) * np.abs(spectrum)
 
-    amplitude = (2.0 / np.sum(window)) * np.sqrt(power / count)
-    freq = np.fft.rfftfreq(nperseg, d=1.0 / sampling_frequency)
     amplitude[0] = 0.0
     return freq, amplitude
 
@@ -1133,7 +1129,7 @@ def build_fft_view(fft_latest):
         return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
     nyquist = sampling_frequency / 2
-    resolution_fft = sampling_frequency / min(1024, n_fft)
+    resolution_fft = sampling_frequency / n_fft
 
     try:
         ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
