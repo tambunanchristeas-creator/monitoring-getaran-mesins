@@ -1133,7 +1133,7 @@ def build_fft_view(fft_latest):
         return {"error": "Sampling frequency harus lebih besar dari 0 Hz."}
 
     nyquist = sampling_frequency / 2
-    resolution_fft = sampling_frequency / n_fft
+    resolution_fft = sampling_frequency / min(1024, n_fft)
 
     try:
         ts = pd.to_datetime(fft_time).strftime("%Y-%m-%d %H:%M:%S")
