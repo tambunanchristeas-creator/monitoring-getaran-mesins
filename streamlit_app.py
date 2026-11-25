@@ -262,23 +262,27 @@ if df.empty:
 
     st.stop()
 
-def calculate_spectrum(data, sampling_frequency):
-    """Amplitudo puncak (sinusoida amplitudo A -> A) dengan jendela Hanning,
-    menggunakan satu FFT atas seluruh data."""
-
+def calculate_spectrum(data, sampling_frequency, nperseg=1024, overlap=0.5):
+    """Amplitudo puncak, Hann window, dirata-rata dari beberapa segmen (Welch)."""
     x = np.asarray(data, dtype=float)
     n = len(x)
-
     if n < 4:
         return None, None
 
-    x = x - np.mean(x)          # buang DC offset
+    nperseg = min(nperseg, n)
+    step = max(1, int(nperseg * (1 - overlap)))
+    window = np.hanning(nperseg)
 
-    window = np.hanning(n)
-    spectrum = np.fft.rfft(x * window)
-    freq = np.fft.rfftfreq(n, d=1.0 / sampling_frequency)
-    amplitude = (2.0 / np.sum(window)) * np.abs(spectrum)
+    power = np.zeros(nperseg // 2 + 1)
+    count = 0
+    for start in range(0, n - nperseg + 1, step):
+        seg = x[start:start + nperseg]
+        seg = seg - np.mean(seg)
+        power += np.abs(np.fft.rfft(seg * window)) ** 2
+        count += 1
 
+    amplitude = (2.0 / np.sum(window)) * np.sqrt(power / count)
+    freq = np.fft.rfftfreq(nperseg, d=1.0 / sampling_frequency)
     amplitude[0] = 0.0
     return freq, amplitude
 
